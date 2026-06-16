@@ -1,13 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FlexoCableSV.PuntoVenta.Models;
 public class OrderDetail
 {
     [Key]
-    public long Id { get; set; }
-    public long OrderId { get; set; }
-    public int ProductId { get; set; }
+    public Guid Id { get; set; }
+    public Guid OrderId { get; set; }
+    public Guid ProductId { get; set; }
 
     [Column(TypeName = "numeric(12,3)")]
     public decimal Quantity { get; set; }
