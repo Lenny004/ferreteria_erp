@@ -10,6 +10,7 @@ namespace Ferreteria.PuntoVenta.Views.Inventario;
 /// <summary>
 /// ABM de Supplier (proveedores): alta, edición y desactivación para el módulo Inventario.
 /// </summary>
+/// <remarks>Atajos: Ctrl+N nuevo, Ctrl+S guardar, F2/Ctrl+F buscar, Esc cancelar, F5 actualizar y Supr desactivar.</remarks>
 public partial class ProveedoresView : UserControl
 {
     private readonly ISupplierService _supplierService;
@@ -50,6 +51,35 @@ public partial class ProveedoresView : UserControl
     /// <summary>Handler de búsqueda por nombre/NIT.</summary>
     private async void OnSearchChanged(object sender, TextChangedEventArgs e) => await ReloadAsync();
 
+    /// <summary>Ejecuta Nuevo desde el teclado.</summary>
+    private void OnNewCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnNuevoClick(sender, e);
+
+    /// <summary>Ejecuta Guardar desde el teclado.</summary>
+    private void OnSaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnGuardarClick(sender, e);
+
+    /// <summary>Enfoca el filtro de proveedores.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        SearchTextBox.Focus();
+        SearchTextBox.SelectAll();
+    }
+
+    /// <summary>Ejecuta Cancelar desde el teclado.</summary>
+    private void OnCancelCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnCancelarClick(sender, e);
+
+    /// <summary>Recarga proveedores desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await ReloadAsync();
+
+    /// <summary>Ejecuta la desactivación conservando la confirmación existente.</summary>
+    private void OnDeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnDesactivarClick(sender, e);
+
+    /// <summary>Habilita Supr solo cuando hay un proveedor seleccionado.</summary>
+    private void OnDeleteCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _selectedId.HasValue;
+        e.Handled = true;
+    }
+
     /// <summary>Prepara el formulario para un proveedor nuevo.</summary>
     private void OnNuevoClick(object sender, RoutedEventArgs e) => ClearForm();
 
@@ -57,7 +87,7 @@ public partial class ProveedoresView : UserControl
     private void OnCancelarClick(object sender, RoutedEventArgs e) => ClearForm();
 
     /// <summary>Selecciona un proveedor de la lista y rellena el formulario.</summary>
-    private async void OnRowClick(object sender, MouseButtonEventArgs e)
+    private async void OnRowClick(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { Tag: Guid id })
         {
@@ -153,7 +183,7 @@ public partial class ProveedoresView : UserControl
             return;
         }
 
-        if (MessageBox.Show("Desactivar este proveedor?", "Proveedores",
+        if (MessageBox.Show("¿Desea desactivar este proveedor?", "Proveedores",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
         {
             return;

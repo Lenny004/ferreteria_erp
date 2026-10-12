@@ -14,6 +14,7 @@ namespace Ferreteria.PuntoVenta.Views.Inventario;
 /// ABM de Employee (usuarios / RRHH): datos laborales, permisos de caja/venta y PIN de acceso.
 /// Seguridad: el PIN se captura en PasswordBox, nunca se lee desde BD al editar ni se registra en logs.
 /// </summary>
+/// <remarks>Atajos: Ctrl+N nuevo, Ctrl+S guardar, F2/Ctrl+F buscar, Esc cancelar, F5 actualizar y Supr desactivar.</remarks>
 public partial class UsuariosView : UserControl
 {
     private readonly IEmployeeService _employees;
@@ -73,6 +74,35 @@ public partial class UsuariosView : UserControl
     /// <summary>Handler de búsqueda por nombre/DUI.</summary>
     private async void OnSearchChanged(object sender, TextChangedEventArgs e) => await ReloadAsync();
 
+    /// <summary>Ejecuta Nuevo desde el teclado.</summary>
+    private void OnNewCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnNuevoClick(sender, e);
+
+    /// <summary>Ejecuta Guardar desde el teclado.</summary>
+    private void OnSaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnGuardarClick(sender, e);
+
+    /// <summary>Enfoca el filtro de usuarios.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        SearchTextBox.Focus();
+        SearchTextBox.SelectAll();
+    }
+
+    /// <summary>Ejecuta Cancelar desde el teclado.</summary>
+    private void OnCancelCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnCancelarClick(sender, e);
+
+    /// <summary>Recarga usuarios desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await ReloadAsync();
+
+    /// <summary>Ejecuta la desactivación conservando la confirmación existente.</summary>
+    private void OnDeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnDesactivarClick(sender, e);
+
+    /// <summary>Habilita Supr solo cuando hay un usuario seleccionado.</summary>
+    private void OnDeleteCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _selectedId.HasValue;
+        e.Handled = true;
+    }
+
     /// <summary>Prepara el formulario para un usuario nuevo (PIN obligatorio).</summary>
     private void OnNuevoClick(object sender, RoutedEventArgs e) => ClearForm();
 
@@ -90,7 +120,7 @@ public partial class UsuariosView : UserControl
     /// Selecciona un Employee y rellena el formulario.
     /// El PasswordBox de PIN queda vacío a propósito (no se recupera el hash).
     /// </summary>
-    private async void OnRowClick(object sender, MouseButtonEventArgs e)
+    private async void OnRowClick(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { Tag: Guid id })
         {
@@ -120,7 +150,7 @@ public partial class UsuariosView : UserControl
         CanCashierCheck.IsChecked = employee.CanCashier;
         CanSellCheck.IsChecked = employee.CanSell;
         PinBox.Password = string.Empty;
-        PinLabel.Text = "Nuevo PIN (dejar vacio para no cambiar)";
+        PinLabel.Content = "Nuevo PIN (dejar vacío para no cambiar)";
         DeactivateButton.Visibility = Visibility.Visible;
         HideError();
     }
@@ -221,7 +251,7 @@ public partial class UsuariosView : UserControl
             return;
         }
 
-        if (MessageBox.Show("Desactivar este usuario?", "Usuarios",
+        if (MessageBox.Show("¿Desea desactivar este usuario?", "Usuarios",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
         {
             return;
@@ -291,7 +321,7 @@ public partial class UsuariosView : UserControl
         CanCashierCheck.IsChecked = false;
         CanSellCheck.IsChecked = false;
         PinBox.Password = string.Empty;
-        PinLabel.Text = "PIN de acceso (4 digitos) *";
+        PinLabel.Content = "PIN de acceso (4 dígitos)";
         DeactivateButton.Visibility = Visibility.Collapsed;
         HideError();
     }

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Ferreteria.PuntoVenta.Helpers;
 using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Domain;
@@ -11,6 +12,7 @@ namespace Ferreteria.PuntoVenta.Views.Inventario;
 /// Entradas y kardex (InventoryMovement): registra ingresos de compra/otro y ajustes de stock,
 /// y muestra los movimientos recientes del inventario.
 /// </summary>
+/// <remarks>Atajos: F2/Ctrl+F enfoca la búsqueda de producto y F5 actualiza el kardex.</remarks>
 public partial class MovimientosView : UserControl
 {
     private readonly IInventoryService _inventory;
@@ -46,13 +48,13 @@ public partial class MovimientosView : UserControl
             ProductCombo.ItemsSource = _products;
             await ReloadAsync();
         }
-        catch (UnauthorizedOperationException ex)
+        catch (UnauthorizedOperationException)
         {
-            ShowError(ex.Message);
+            ShowError("No tiene permisos para consultar el inventario.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ShowError($"No se pudo inicializar: {ex.Message}");
+            ShowError("No se pudo inicializar la pantalla. Intente nuevamente.");
         }
     }
 
@@ -60,12 +62,22 @@ public partial class MovimientosView : UserControl
     private async Task ReloadAsync()
     {
         var items = await _inventory.GetRecentMovementsAsync(null, 150);
-        ItemsList.ItemsSource = items;
+        ItemsList.ItemsSource = items.Select(item => new MovementDisplay(item)).ToList();
         EmptyStateText.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>Botón Actualizar: refresca el kardex.</summary>
     private async void OnActualizarClick(object sender, RoutedEventArgs e) => await ReloadAsync();
+
+    /// <summary>Enfoca el combo editable usado para buscar productos.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        ProductCombo.Focus();
+        ProductCombo.IsDropDownOpen = true;
+    }
+
+    /// <summary>Recarga el kardex desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await ReloadAsync();
 
     /// <summary>Al elegir producto, muestra el stock actual.</summary>
     private void OnProductSelected(object sender, SelectionChangedEventArgs e)
@@ -73,7 +85,7 @@ public partial class MovimientosView : UserControl
         if (ProductCombo.SelectedValue is Guid id)
         {
             var item = _products.FirstOrDefault(p => p.Id == id);
-            CurrentStockText.Text = item is null ? "Stock actual: -" : $"Stock actual: {item.Stock}";
+            CurrentStockText.Text = item is null ? "Stock actual: -" : $"Stock actual: {NumberFormatter.Quantity(item.Stock)}";
         }
     }
 
@@ -88,7 +100,8 @@ public partial class MovimientosView : UserControl
         }
 
         var isAdjustment = SelectedType() == "AJUSTE";
-        QuantityLabel.Text = isAdjustment ? "Nuevo stock (valor final) *" : "Cantidad a ingresar *";
+        QuantityLabel.Content = isAdjustment ? "Nuevo stock (valor final)" : "Cantidad a ingresar";
+        ReasonLabel.Content = isAdjustment ? "Motivo (obligatorio para ajuste)" : "Motivo";
         CostPanel.Visibility = isAdjustment ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -144,13 +157,13 @@ public partial class MovimientosView : UserControl
         {
             ShowError(vex.Message);
         }
-        catch (UnauthorizedOperationException ex)
+        catch (UnauthorizedOperationException)
         {
-            ShowError(ex.Message);
+            ShowError("No tiene permisos para registrar movimientos.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ShowError($"No se pudo registrar: {ex.Message}");
+            ShowError("No se pudo registrar el movimiento. Intente nuevamente.");
         }
     }
 
@@ -170,4 +183,14 @@ public partial class MovimientosView : UserControl
 
     /// <summary>Ítem del combo de productos (Id, texto visible y stock).</summary>
     private sealed record ProductPickItem(Guid Id, string Display, decimal Stock);
+
+    private sealed record MovementDisplay(InventoryMovementResult Movement)
+    {
+        public string CreatedAtText => NumberFormatter.DateTimeUtc(Movement.CreatedAt);
+        public string ProductCode => Movement.ProductCode;
+        public string ProductDescription => Movement.ProductDescription;
+        public string MovementType => Movement.MovementType;
+        public string Quantity => NumberFormatter.Quantity(Movement.Quantity);
+        public string StockAfter => NumberFormatter.Quantity(Movement.StockAfter);
+    }
 }

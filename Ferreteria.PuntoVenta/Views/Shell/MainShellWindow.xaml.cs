@@ -1,6 +1,8 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Input;
 using System.Windows.Threading;
 using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Security;
@@ -16,8 +18,12 @@ namespace Ferreteria.PuntoVenta.Views.Shell;
 /// Shell principal post-login: navegación lateral entre módulos Caja e Inventario
 /// según el <see cref="OperationalModule"/> de la sesión (Employee autenticado por PIN).
 /// </summary>
+/// <remarks>Ctrl+1..Ctrl+9 navegan las secciones visibles recalculadas por permisos; F5 actualiza conectividad.</remarks>
 public partial class MainShellWindow : Window
 {
+    /// <summary>Comando enrutado para navegar por la sección visible indicada.</summary>
+    public static readonly RoutedCommand NavigateCommand = new("Navegar sección", typeof(MainShellWindow));
+
     private readonly Dictionary<string, (Button Button, string Title, Func<UserControl> CreateView)> _sections;
     private readonly IConnectivityService _connectivityService;
     private readonly ICurrentSessionService _currentSession;
@@ -122,6 +128,18 @@ public partial class MainShellWindow : Window
             }
         }
 
+        var visibleSections = _sections.Values
+            .Where(section => section.Button.Visibility == Visibility.Visible)
+            .ToList();
+        for (var index = 0; index < visibleSections.Count; index++)
+        {
+            var section = visibleSections[index];
+            var shortcut = NavigationShortcutMap.FormatShortcut(index);
+            section.Button.TabIndex = index;
+            AutomationProperties.SetAcceleratorKey(section.Button, shortcut);
+            section.Button.ToolTip = $"{section.Title} ({shortcut})";
+        }
+
         TxtNavSectionCaja.Visibility = cajaVisible ? Visibility.Visible : Visibility.Collapsed;
         TxtNavSectionInventario.Visibility = inventarioVisible ? Visibility.Visible : Visibility.Collapsed;
         NavSectionDivider.Visibility = cajaVisible && inventarioVisible
@@ -176,6 +194,61 @@ public partial class MainShellWindow : Window
         await RefreshConnectivityStatusAsync();
     }
 
+    /// <summary>Actualiza el estado de conectividad desde F5.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await RefreshConnectivityStatusAsync();
+
+    /// <summary>Ejecuta un atajo de navegación sobre el conjunto permitido y visible.</summary>
+    private void OnNavigateCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (TryReadShortcutIndex(e.Parameter, out var shortcutIndex))
+        {
+            NavigateToVisibleSection(shortcutIndex);
+        }
+    }
+
+    /// <summary>Habilita solo los índices que corresponden a secciones visibles.</summary>
+    private void OnNavigateCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = TryReadShortcutIndex(e.Parameter, out var index)
+            && NavigationShortcutMap.ResolveSectionKey(GetVisibleSectionKeys(), index) is not null;
+        e.Handled = true;
+    }
+
+    /// <summary>Convierte el parámetro XAML del atajo a un índice de sección.</summary>
+    private static bool TryReadShortcutIndex(object? parameter, out int index)
+    {
+        if (parameter is int intIndex)
+        {
+            index = intIndex;
+            return true;
+        }
+
+        return int.TryParse(parameter?.ToString(), out index);
+    }
+
+    /// <summary>Devuelve las secciones permitidas en el mismo orden del menú.</summary>
+    private List<(Button Button, string Title, Func<UserControl> CreateView)> GetVisibleSections() =>
+        _sections.Values.Where(section => section.Button.Visibility == Visibility.Visible).ToList();
+
+    /// <summary>Obtiene las claves visibles en el mismo orden usado por los atajos.</summary>
+    private List<string> GetVisibleSectionKeys() =>
+        _sections.Where(pair => pair.Value.Button.Visibility == Visibility.Visible)
+            .Select(pair => pair.Key)
+            .ToList();
+
+    /// <summary>Abre la sección visible indicada sin omitir las validaciones de permisos.</summary>
+    private void NavigateToVisibleSection(int shortcutIndex)
+    {
+        var sectionKey = NavigationShortcutMap.ResolveSectionKey(GetVisibleSectionKeys(), shortcutIndex);
+        if (sectionKey is null)
+        {
+            return;
+        }
+
+        ShowSection(sectionKey);
+        _sections[sectionKey].Button.Focus();
+    }
+
     /// <summary>Detiene el timer al cerrar la ventana.</summary>
     private void OnClosed(object? sender, EventArgs e)
     {
@@ -199,6 +272,7 @@ public partial class MainShellWindow : Window
         }
     }
 
+    /// <summary>Procesa atajos visibles del shell sin saltarse permisos de navegación.</summary>
     /// <summary>
     /// Cambia el contenido central a la vista de la sección indicada, si pertenece al módulo activo.
     /// </summary>
