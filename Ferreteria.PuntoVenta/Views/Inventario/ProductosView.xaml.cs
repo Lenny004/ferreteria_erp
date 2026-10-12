@@ -47,7 +47,7 @@ public partial class ProductosView : UserControl
         try
         {
             var permissions = await _authorizationGuard.GetGrantedPermissionsAsync();
-            _canEdit = permissions.Contains(PosPermission.AdministrarCatalogo);
+            _canEdit = InventoryViewPermissionPolicy.CanEditProducts(permissions);
             NewButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
             SaveButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
             EditorPanel.IsEnabled = _canEdit;

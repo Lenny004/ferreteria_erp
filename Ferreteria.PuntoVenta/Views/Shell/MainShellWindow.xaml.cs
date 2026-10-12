@@ -136,6 +136,13 @@ public partial class MainShellWindow : Window
             var section = visibleSections[index];
             var shortcut = NavigationShortcutMap.FormatShortcut(index);
             section.Button.TabIndex = index;
+            if (shortcut.Length == 0)
+            {
+                AutomationProperties.SetAcceleratorKey(section.Button, string.Empty);
+                section.Button.ToolTip = null;
+                continue;
+            }
+
             AutomationProperties.SetAcceleratorKey(section.Button, shortcut);
             section.Button.ToolTip = $"{section.Title} ({shortcut})";
         }
@@ -245,8 +252,10 @@ public partial class MainShellWindow : Window
             return;
         }
 
-        ShowSection(sectionKey);
-        _sections[sectionKey].Button.Focus();
+        if (ShowSection(sectionKey))
+        {
+            _sections[sectionKey].Button.Focus();
+        }
     }
 
     /// <summary>Detiene el timer al cerrar la ventana.</summary>
@@ -272,31 +281,35 @@ public partial class MainShellWindow : Window
         }
     }
 
-    /// <summary>Procesa atajos visibles del shell sin saltarse permisos de navegación.</summary>
     /// <summary>
     /// Cambia el contenido central a la vista de la sección indicada, si pertenece al módulo activo.
     /// </summary>
-    private void ShowSection(string sectionKey)
+    private bool ShowSection(string sectionKey)
     {
         if (_currentSession.ActiveModule is OperationalModule activeModule
             && !NavSections.BelongsToModule(sectionKey, activeModule))
         {
-            return;
+            return false;
         }
 
         if (!NavSections.IsAllowed(sectionKey, _grantedPermissions))
         {
-            return;
+            return false;
         }
 
         if (!_sections.TryGetValue(sectionKey, out var activeSection))
         {
-            return;
+            return false;
         }
 
         if (activeSection.Button.Visibility != Visibility.Visible)
         {
-            return;
+            return false;
+        }
+
+        if (!CanNavigateFromCurrentSection(sectionKey))
+        {
+            return false;
         }
 
         foreach (var section in _sections.Values)
@@ -307,6 +320,21 @@ public partial class MainShellWindow : Window
         activeSection.Button.Style = (Style)FindResource("AppNavButtonActiveStyle");
         HeaderTitle.Text = activeSection.Title;
         MainContent.Content = activeSection.CreateView();
+        return true;
+    }
+
+    /// <summary>Confirma la pérdida del carrito al salir de Facturación.</summary>
+    /// <param name="targetSectionKey">Clave de la sección destino.</param>
+    /// <returns><see langword="true"/> si la navegación puede continuar.</returns>
+    private bool CanNavigateFromCurrentSection(string targetSectionKey)
+    {
+        if (string.Equals(targetSectionKey, NavSections.Facturacion, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return MainContent.Content is not FacturacionView facturacionView
+            || facturacionView.ConfirmNavigationAway();
     }
 
     /// <summary>

@@ -5,8 +5,8 @@
     FocusManager.FocusedElement="{Binding ElementName=SearchTextBox}">
     <!-- Atajos: Ctrl+N nuevo, Ctrl+S guardar, F2/Ctrl+F buscar, Esc cancelar, F5 actualizar y Supr desactivar. -->
     <UserControl.CommandBindings>
-        <CommandBinding Command="{x:Static input:ApplicationCommands.New}" Executed="OnNewCommandExecuted" />
-        <CommandBinding Command="{x:Static input:ApplicationCommands.Save}" Executed="OnSaveCommandExecuted" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.New}" Executed="OnNewCommandExecuted" CanExecute="OnEditCommandCanExecute" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Save}" Executed="OnSaveCommandExecuted" CanExecute="OnEditCommandCanExecute" />
         <CommandBinding Command="{x:Static input:ApplicationCommands.Find}" Executed="OnFindCommandExecuted" />
         <CommandBinding Command="{x:Static input:ApplicationCommands.Close}" Executed="OnCancelCommandExecuted" />
         <CommandBinding Command="{x:Static input:NavigationCommands.Refresh}" Executed="OnRefreshCommandExecuted" />
@@ -52,6 +52,7 @@
                     AutomationProperties.Name="Buscar proveedor"
                     AutomationProperties.AcceleratorKey="F2, Ctrl+F" />
                 <Button
+                    x:Name="NewButton"
                     Grid.Column="1"
                     Margin="10,0,0,0"
                     Style="{StaticResource AppSecondaryWideButtonStyle}"
@@ -128,7 +129,7 @@
             CornerRadius="{StaticResource AppRadius_MD}"
             Padding="16">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
+                <StackPanel x:Name="EditorPanel">
                     <TextBlock x:Name="FormTitle" Text="Nuevo proveedor" Style="{StaticResource AppPanelTitleStyle}" Margin="0,0,0,12" />
 
                     <Label Content="Nombre / Razón social" Target="{Binding ElementName=NameBox}" Style="{StaticResource RequiredLabelStyle}" helpers:FieldHelper.IsRequired="True" />
@@ -173,7 +174,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Button Style="{StaticResource AppPrimaryWideButtonStyle}" Click="OnGuardarClick" Margin="0,0,6,0" TabIndex="20" AutomationProperties.Name="Guardar proveedor" AutomationProperties.AcceleratorKey="Ctrl+S">
+                        <Button x:Name="SaveButton" Style="{StaticResource AppPrimaryWideButtonStyle}" Click="OnGuardarClick" Margin="0,0,6,0" TabIndex="20" AutomationProperties.Name="Guardar proveedor" AutomationProperties.AcceleratorKey="Ctrl+S">
                             <TextBlock Text="GUARDAR (Ctrl+S)" Foreground="{StaticResource AppBlanco}" FontWeight="Bold" />
                         </Button>
                         <Button Grid.Column="1" Style="{StaticResource AppSecondaryWideButtonStyle}" Click="OnCancelarClick" Margin="6,0,0,0" TabIndex="21" AutomationProperties.Name="Cancelar edición" AutomationProperties.AcceleratorKey="Escape">

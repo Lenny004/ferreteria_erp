@@ -6,16 +6,14 @@
     xmlns:local="clr-namespace:Ferreteria.PuntoVenta.Views.Caja"
     xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
     Loaded="OnLoaded">
-    <!-- Atajos: F5 actualizar, F9 cerrar turno y Esc solicitar el cierre con su confirmación. -->
+    <!-- Atajos: F5 actualizar y F9 cerrar turno. Escape no ejecuta ninguna acción. -->
     <UserControl.CommandBindings>
         <CommandBinding Command="{x:Static input:NavigationCommands.Refresh}" Executed="OnRefreshCommandExecuted" />
         <CommandBinding Command="{x:Static input:ApplicationCommands.Save}" Executed="OnCloseCommandExecuted" CanExecute="OnCloseCommandCanExecute" />
-        <CommandBinding Command="{x:Static input:ApplicationCommands.Close}" Executed="OnCloseCommandExecuted" CanExecute="OnCloseCommandCanExecute" />
     </UserControl.CommandBindings>
     <UserControl.InputBindings>
         <KeyBinding Key="F5" Command="{x:Static input:NavigationCommands.Refresh}" />
         <KeyBinding Key="F9" Command="{x:Static input:ApplicationCommands.Save}" />
-        <KeyBinding Key="Escape" Command="{x:Static input:ApplicationCommands.Close}" />
     </UserControl.InputBindings>
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
@@ -38,9 +36,9 @@
                     Text="Resumen de turno, conciliación e impresión de cierre"
                     Style="{StaticResource AppPanelSubtitleStyle}" />
                 <TextBlock
-                    Text="Atajos: F5 actualizar · F9 cerrar turno · Esc cancelar/cerrar"
+                    Text="Atajos: F5 actualizar · F9 cerrar turno · Esc sin acción"
                     Style="{StaticResource AppPanelSubtitleStyle}"
-                    AutomationProperties.HelpText="F5 actualiza el corte y Escape cancela o cierra la pantalla." />
+                    AutomationProperties.HelpText="F5 actualiza el corte y Escape no ejecuta ninguna acción." />
                 <TextBlock
                     x:Name="StatusText"
                     Style="{StaticResource AppPanelSubtitleStyle}"

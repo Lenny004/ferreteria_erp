@@ -22,8 +22,19 @@ public sealed class NavigationShortcutMapTests
     [Theory]
     [InlineData(0, "Ctrl+1")]
     [InlineData(8, "Ctrl+9")]
+    [InlineData(9, "")]
     public void FormatShortcut_GeneraEtiquetaVisible(int index, string expected)
     {
         Assert.Equal(expected, NavigationShortcutMap.FormatShortcut(index));
+    }
+
+    /// <summary>Comprueba que no existen índices navegables después de Ctrl+9.</summary>
+    [Fact]
+    public void ResolveSectionKey_RechazaAtajosSinTeclaReal()
+    {
+        var visible = Enumerable.Range(0, 11).Select(index => $"Section{index}").ToArray();
+
+        Assert.Equal("Section8", NavigationShortcutMap.ResolveSectionKey(visible, 8));
+        Assert.Null(NavigationShortcutMap.ResolveSectionKey(visible, 9));
     }
 }

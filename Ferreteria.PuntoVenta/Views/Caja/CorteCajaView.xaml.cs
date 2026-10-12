@@ -16,7 +16,7 @@ namespace Ferreteria.PuntoVenta.Views.Caja;
 /// <remarks>
 /// La autorización y el cálculo definitivo se repiten en <see cref="ICashSessionService"/> dentro de PostgreSQL.
 /// Esta vista solo coordina la captura táctil, la presentación y la impresión posterior al cierre.
-/// Atajos: F5 actualizar, F9 cerrar turno y Esc solicitar el cierre con confirmación.
+/// Atajos: F5 actualizar y F9 cerrar turno; Escape no ejecuta el cierre.
 /// </remarks>
 public partial class CorteCajaView : UserControl
 {

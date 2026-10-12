@@ -19,8 +19,10 @@ public partial class UsuariosView : UserControl
 {
     private readonly IEmployeeService _employees;
     private readonly ICurrentSessionService _currentSession;
+    private readonly IAuthorizationGuard _authorizationGuard;
     private readonly IPinUnlockService _pinUnlock;
     private readonly string _defaultCashRegisterCode;
+    private bool _canEdit;
     private Guid? _selectedId;
 
     /// <summary>Inicializa la vista e hidrata departamentos/puestos al Loaded.</summary>
@@ -28,10 +30,12 @@ public partial class UsuariosView : UserControl
         IEmployeeService employees,
         ICurrentSessionService currentSession,
         IPinUnlockService pinUnlock,
-        IOptions<CashRegisterOptions> cashRegisterOptions)
+        IOptions<CashRegisterOptions> cashRegisterOptions,
+        IAuthorizationGuard authorizationGuard)
     {
         _employees = employees;
         _currentSession = currentSession;
+        _authorizationGuard = authorizationGuard;
         _pinUnlock = pinUnlock;
         ArgumentNullException.ThrowIfNull(cashRegisterOptions);
         _defaultCashRegisterCode = cashRegisterOptions.Value.Codigo;
@@ -48,6 +52,17 @@ public partial class UsuariosView : UserControl
     {
         try
         {
+            var permissions = await _authorizationGuard.GetGrantedPermissionsAsync();
+            _canEdit = InventoryViewPermissionPolicy.CanEditUsers(permissions);
+            NewButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
+            SaveButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
+            EditorPanel.IsEnabled = _canEdit;
+            if (!_canEdit)
+            {
+                FormTitle.Text = "Usuarios y RRHH (solo lectura)";
+                ShowError("No tiene permiso para administrar usuarios.");
+            }
+
             DepartmentCombo.ItemsSource = await _employees.GetDepartmentsAsync();
             PositionCombo.ItemsSource = await _employees.GetPositionsAsync(null);
             HireDatePicker.SelectedDate = DateTime.Today;
@@ -80,6 +95,13 @@ public partial class UsuariosView : UserControl
     /// <summary>Ejecuta Guardar desde el teclado.</summary>
     private void OnSaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnGuardarClick(sender, e);
 
+    /// <summary>Habilita Nuevo y Guardar solo con permiso de administración de usuarios.</summary>
+    private void OnEditCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _canEdit;
+        e.Handled = true;
+    }
+
     /// <summary>Enfoca el filtro de usuarios.</summary>
     private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
     {
@@ -104,7 +126,13 @@ public partial class UsuariosView : UserControl
     }
 
     /// <summary>Prepara el formulario para un usuario nuevo (PIN obligatorio).</summary>
-    private void OnNuevoClick(object sender, RoutedEventArgs e) => ClearForm();
+    private void OnNuevoClick(object sender, RoutedEventArgs e)
+    {
+        if (_canEdit)
+        {
+            ClearForm();
+        }
+    }
 
     /// <summary>Cancela la edición y limpia el formulario.</summary>
     private void OnCancelarClick(object sender, RoutedEventArgs e) => ClearForm();
@@ -160,6 +188,12 @@ public partial class UsuariosView : UserControl
     /// </summary>
     private async void OnGuardarClick(object sender, RoutedEventArgs e)
     {
+        if (!_canEdit)
+        {
+            ShowError("No tiene permiso para administrar usuarios.");
+            return;
+        }
+
         HideError();
 
         if (string.IsNullOrWhiteSpace(FirstNameBox.Text) || string.IsNullOrWhiteSpace(LastNameBox.Text))

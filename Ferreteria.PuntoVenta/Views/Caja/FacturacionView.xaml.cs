@@ -46,6 +46,9 @@ public partial class FacturacionView : UserControl
     private Customer? _selectedCustomer;
     private bool _suppressCustomerSearch;
 
+    /// <summary>Indica si existe una venta en curso que se perdería al navegar.</summary>
+    public bool HasPendingSale => _cartLineItems.Count > 0;
+
     /// <summary>Inicializa la vista de facturación y enlaza el carrito a la UI.</summary>
     /// <remarks>
     /// Atajos POS: F2 enfoca la búsqueda de producto; F9 cobra; Esc cierra una búsqueda abierta
@@ -522,6 +525,28 @@ public partial class FacturacionView : UserControl
 
         ConfirmAndClearSale();
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Solicita confirmación antes de abandonar Facturación con líneas en el carrito.
+    /// </summary>
+    /// <returns><see langword="true"/> si la navegación puede continuar.</returns>
+    public bool ConfirmNavigationAway()
+    {
+        if (!PendingSaleNavigationGuard.RequiresConfirmation(HasPendingSale))
+        {
+            return true;
+        }
+
+        var confirmation = MessageBox.Show(
+            Window.GetWindow(this),
+            "Se perderán las líneas de la venta en curso. ¿Desea continuar?",
+            "Confirmar navegación",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        return PendingSaleNavigationGuard.ShouldNavigate(
+            HasPendingSale,
+            confirmation == MessageBoxResult.Yes);
     }
 
     private void ConfirmAndClearSale()
