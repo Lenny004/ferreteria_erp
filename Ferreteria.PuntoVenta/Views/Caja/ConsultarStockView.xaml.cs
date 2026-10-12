@@ -1,4 +1,6 @@
 using System.Windows.Controls;
+using System.Windows.Input;
+using Ferreteria.PuntoVenta.Helpers;
 using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Domain;
 using Ferreteria.PuntoVenta.Services.Time;
@@ -9,6 +11,7 @@ namespace Ferreteria.PuntoVenta.Views.Caja;
 /// Consulta rápida de inventario desde el módulo Caja: lista Product con filtros por estado de stock
 /// (disponible / bajo / agotado) para el cajero antes de vender.
 /// </summary>
+/// <remarks>Atajos: F2/Ctrl+F enfoca la búsqueda y F5 actualiza la consulta.</remarks>
 public partial class ConsultarStockView : UserControl
 {
     private readonly IInventoryService _inventoryService;
@@ -30,6 +33,7 @@ public partial class ConsultarStockView : UserControl
     /// <summary>Carga el listado al entrar a la vista.</summary>
     private async void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
     {
+        SearchTextBox.Focus();
         await LoadProductsAsync();
     }
 
@@ -44,6 +48,16 @@ public partial class ConsultarStockView : UserControl
     {
         await LoadProductsAsync();
     }
+
+    /// <summary>Enfoca y selecciona el texto del filtro de stock.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        SearchTextBox.Focus();
+        SearchTextBox.SelectAll();
+    }
+
+    /// <summary>Actualiza la consulta de stock desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await LoadProductsAsync();
 
     /// <summary>Handler de texto de búsqueda.</summary>
     private async void OnSearchChanged(object sender, TextChangedEventArgs e)
@@ -83,7 +97,7 @@ public partial class ConsultarStockView : UserControl
             ActiveProductsText.Text = products.Count.ToString();
             StockLowText.Text = products.Count(product => product.Status == SalesDomainConstants.StockFilters.Low).ToString();
             OutOfStockText.Text = products.Count(product => product.Status == SalesDomainConstants.StockFilters.Depleted).ToString();
-            LastUpdatedText.Text = _calendar.ToLocal(_calendar.UtcNow()).ToString("HH:mm:ss");
+            LastUpdatedText.Text = NumberFormatter.Time(_calendar.UtcNow());
             EmptyStateText.Visibility = products.Count == 0
                 ? System.Windows.Visibility.Visible
                 : System.Windows.Visibility.Collapsed;
@@ -91,9 +105,9 @@ public partial class ConsultarStockView : UserControl
         catch (OperationCanceledException)
         {
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            EmptyStateText.Text = $"No se pudo consultar inventario: {ex.Message}";
+            EmptyStateText.Text = "No se pudo consultar el inventario. Intente nuevamente.";
             EmptyStateText.Visibility = System.Windows.Visibility.Visible;
         }
     }

@@ -1,9 +1,10 @@
 <Window x:Class="Ferreteria.PuntoVenta.Views.Caja.ReturnReceiptPreviewWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Vista previa de devolución" Width="520" Height="760" WindowStartupLocation="CenterOwner">
+        Title="Vista previa de devolución" Width="520" Height="760" Style="{StaticResource AppDialogWindowStyle}" ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        FocusManager.FocusedElement="{Binding ElementName=CloseButton}">
     <DockPanel Margin="16">
-        <Button DockPanel.Dock="Bottom" Content="CERRAR" Height="44" Margin="0,12,0,0" Click="OnCloseClick" />
+        <Button x:Name="CloseButton" DockPanel.Dock="Bottom" Content="CERRAR (Esc)" Style="{StaticResource AppSecondaryWideButtonStyle}" Height="44" Margin="0,12,0,0" Click="OnCloseClick" IsCancel="True" IsDefault="True" TabIndex="0" AutomationProperties.Name="Cerrar vista previa de devolución" AutomationProperties.AcceleratorKey="Escape" />
         <TextBox x:Name="ReceiptTextBox" IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
                  FontFamily="Consolas" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
     </DockPanel>

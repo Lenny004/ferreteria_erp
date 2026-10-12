@@ -1,9 +1,9 @@
 using System.Windows;
-using System.Windows.Input;
 
 namespace Ferreteria.PuntoVenta.Views.Caja;
 
 /// <summary>Diálogo accesible para decidir si se reintenta una impresión fallida.</summary>
+/// <remarks>El foco inicia en Reintentar; Enter reintenta y Escape continúa sin impresión.</remarks>
 public partial class PrintFailureDialog : Window
 {
     /// <summary>Inicializa el diálogo con el motivo breve para el cajero.</summary>
@@ -18,15 +18,4 @@ public partial class PrintFailureDialog : Window
 
     private void OnContinueClick(object sender, RoutedEventArgs e) => DialogResult = false;
 
-    private void OnKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            DialogResult = true;
-        }
-        else if (e.Key == Key.Escape)
-        {
-            DialogResult = false;
-        }
-    }
 }

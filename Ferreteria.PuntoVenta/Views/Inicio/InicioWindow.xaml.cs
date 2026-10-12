@@ -10,6 +10,7 @@ namespace Ferreteria.PuntoVenta.Views.Inicio;
 /// Pantalla de bienvenida (entrada de la app): el usuario elige módulo Caja o Inventario
 /// y se abre <see cref="PinWindow"/> para autenticar al Employee.
 /// </summary>
+/// <remarks>El foco inicia en Ventas; los módulos se activan con Enter o Espacio.</remarks>
 public partial class InicioWindow : Window
 {
     private readonly IServiceProvider _services;
@@ -19,6 +20,7 @@ public partial class InicioWindow : Window
     {
         _services = services;
         InitializeComponent();
+        Loaded += (_, _) => BtnVentas.Focus();
     }
 
     /// <summary>Minimiza la ventana de inicio.</summary>

@@ -3,6 +3,7 @@ using System.Windows;
 namespace Ferreteria.PuntoVenta.Views.Caja;
 
 /// <summary>Diálogo modal que captura el PIN de autorización sin exponerlo en un TextBox.</summary>
+/// <remarks>El foco inicia en el PIN; Enter acepta y Escape cancela.</remarks>
 public partial class ReturnAuthorizationDialog : Window
 {
     /// <summary>Inicializa el diálogo de autorización.</summary>
