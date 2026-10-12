@@ -4,7 +4,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:helpers="clr-namespace:Ferreteria.PuntoVenta.Helpers"
     xmlns:local="clr-namespace:Ferreteria.PuntoVenta.Views.Caja"
+    xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
     Loaded="OnLoaded">
+    <!-- Atajos: F5 actualizar y F9 cerrar turno. Escape no ejecuta ninguna acción. -->
+    <UserControl.CommandBindings>
+        <CommandBinding Command="{x:Static input:NavigationCommands.Refresh}" Executed="OnRefreshCommandExecuted" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Save}" Executed="OnCloseCommandExecuted" CanExecute="OnCloseCommandCanExecute" />
+    </UserControl.CommandBindings>
+    <UserControl.InputBindings>
+        <KeyBinding Key="F5" Command="{x:Static input:NavigationCommands.Refresh}" />
+        <KeyBinding Key="F9" Command="{x:Static input:ApplicationCommands.Save}" />
+    </UserControl.InputBindings>
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
         <Grid
@@ -25,6 +35,10 @@
                 <TextBlock
                     Text="Resumen de turno, conciliación e impresión de cierre"
                     Style="{StaticResource AppPanelSubtitleStyle}" />
+                <TextBlock
+                    Text="Atajos: F5 actualizar · F9 cerrar turno · Esc sin acción"
+                    Style="{StaticResource AppPanelSubtitleStyle}"
+                    AutomationProperties.HelpText="F5 actualiza el corte y Escape no ejecuta ninguna acción." />
                 <TextBlock
                     x:Name="StatusText"
                     Style="{StaticResource AppPanelSubtitleStyle}"
@@ -188,7 +202,7 @@
                                                 Style="{StaticResource AppTableCellStyle}" />
                                             <TextBlock
                                                 Grid.Column="3"
-                                                Text="{Binding Amount, StringFormat={}{0:C2}}"
+                                                Text="{Binding AmountText}"
                                                 Style="{StaticResource AppTableCellStyle}" />
                                             <TextBlock
                                                 Grid.Column="4"
@@ -218,13 +232,19 @@
                             Scale="{x:Static helpers:FieldConstraints.CashSessionsClosingDeclaredAmountScale}"
                             AllowNegative="False"
                             Margin="0,0,0,8" />
+                        <Label
+                            Content="Observaciones"
+                            Target="{Binding ElementName=NotesTextBox}"
+                            Style="{StaticResource AppFieldLabelStyle}" />
                         <TextBox
                             x:Name="NotesTextBox"
                             Style="{StaticResource AppFieldTextBoxStyle}"
-                            helpers:WatermarkService.Watermark="Observaciones"
+                            helpers:WatermarkService.Watermark="Observaciones del cierre (opcional)"
                             Height="72"
                             TextWrapping="Wrap"
-                            Margin="0,0,0,16" />
+                            Margin="0,0,0,16"
+                            TabIndex="0"
+                            AutomationProperties.Name="Observaciones del cierre" />
                         <TextBlock
                             x:Name="DifferenceText"
                             Text="Diferencia: aún no calculada"
@@ -240,15 +260,20 @@
                             MinHeight="90"
                             FontSize="16"
                             Margin="0,0,0,10"
-                            Click="OnCalculateClick" />
+                            Click="OnCalculateClick"
+                            TabIndex="1"
+                            AutomationProperties.Name="Calcular diferencia" />
                         <Button
                             x:Name="CloseButton"
-                            Content="CERRAR TURNO"
+                            Content="CERRAR TURNO (F9)"
                             Style="{StaticResource AppPrimaryWideButtonStyle}"
                             MinHeight="90"
                             FontSize="16"
                             IsEnabled="False"
-                            Click="OnCloseClick" />
+                            Click="OnCloseClick"
+                            TabIndex="2"
+                            AutomationProperties.Name="Cerrar turno"
+                            AutomationProperties.AcceleratorKey="F9" />
                         <Button
                             x:Name="ReprintButton"
                             Content="REIMPRIMIR REPORTE"
@@ -257,7 +282,9 @@
                             FontSize="16"
                             IsEnabled="False"
                             Margin="0,10,0,0"
-                            Click="OnReprintClick" />
+                            Click="OnReprintClick"
+                            TabIndex="3"
+                            AutomationProperties.Name="Reimprimir reporte" />
                     </StackPanel>
                 </Border>
             </Grid>

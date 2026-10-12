@@ -2,11 +2,25 @@
     x:Class="Ferreteria.PuntoVenta.Views.Caja.DevolucionesView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:helpers="clr-namespace:Ferreteria.PuntoVenta.Helpers">
+    xmlns:helpers="clr-namespace:Ferreteria.PuntoVenta.Helpers"
+    xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+    FocusManager.FocusedElement="{Binding ElementName=SearchTextBox}">
+    <!-- Atajos: F2/Ctrl+F buscar, F9 confirmar devolución y Esc cancelar la selección. -->
+    <UserControl.CommandBindings>
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Find}" Executed="OnFindCommandExecuted" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Save}" Executed="OnConfirmCommandExecuted" CanExecute="OnConfirmCommandCanExecute" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Close}" Executed="OnCancelCommandExecuted" />
+    </UserControl.CommandBindings>
+    <UserControl.InputBindings>
+        <KeyBinding Key="F2" Command="{x:Static input:ApplicationCommands.Find}" />
+        <KeyBinding Key="F" Modifiers="Control" Command="{x:Static input:ApplicationCommands.Find}" />
+        <KeyBinding Key="F9" Command="{x:Static input:ApplicationCommands.Save}" />
+        <KeyBinding Key="Escape" Command="{x:Static input:ApplicationCommands.Close}" />
+    </UserControl.InputBindings>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,24">
             <TextBlock Text="Devoluciones" Style="{StaticResource AppPanelTitleStyle}" />
-            <TextBlock Text="Revise la venta original y prepare el cálculo de la devolución" Style="{StaticResource AppPanelSubtitleStyle}" />
+            <TextBlock Text="Revise la venta original · F2/Ctrl+F buscar · F9 confirmar · Esc cancelar" Style="{StaticResource AppPanelSubtitleStyle}" />
             <Border Style="{StaticResource AppStatCardStyle}" Margin="0,12,0,12">
                 <StackPanel>
                     <TextBlock Text="Estado de confirmación" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AppWarning}" />
@@ -21,12 +35,12 @@
             </UniformGrid>
             <Border Style="{StaticResource AppStatCardStyle}" Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="Buscar venta" Style="{StaticResource AppCardLabelStyle}" />
+                    <Label Content="Buscar venta" Target="{Binding ElementName=SearchTextBox}" Style="{StaticResource RequiredLabelStyle}" helpers:FieldHelper.IsRequired="True" />
                     <DockPanel Margin="0,8,0,8">
-                        <Button x:Name="SearchButton" DockPanel.Dock="Right" Content="BUSCAR" Width="120" Height="90" FontSize="16" Click="OnSearchClick" />
-                        <TextBox x:Name="SearchTextBox" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="Número de control, cliente, NIT o id corto" VerticalContentAlignment="Center" />
+                        <Button x:Name="SearchButton" DockPanel.Dock="Right" Content="BUSCAR (F2)" Style="{StaticResource AppSecondaryWideButtonStyle}" Click="OnSearchClick" AutomationProperties.Name="Buscar venta" AutomationProperties.AcceleratorKey="F2, Ctrl+F" TabIndex="1" />
+                        <TextBox x:Name="SearchTextBox" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="Número de control, cliente, NIT o id corto" VerticalContentAlignment="Center" TabIndex="0" AutomationProperties.Name="Buscar venta" />
                     </DockPanel>
-                    <ListBox x:Name="SalesList" Height="150" SelectionChanged="OnSaleSelected" DisplayMemberPath="CustomerDisplayName" />
+                    <ListBox x:Name="SalesList" Height="150" SelectionChanged="OnSaleSelected" DisplayMemberPath="CustomerDisplayName" TabIndex="2" AutomationProperties.Name="Ventas disponibles para devolución" />
                 </StackPanel>
             </Border>
             <Grid>
@@ -43,17 +57,19 @@
                 </Border>
                 <Border Grid.Column="1" Style="{StaticResource AppStatCardStyle}">
                     <StackPanel>
-                        <TextBlock Text="Motivo y reintegro" Style="{StaticResource AppCardLabelStyle}" />
-                        <ComboBox x:Name="ReasonCombo" DisplayMemberPath="Label" SelectedValuePath="Code" Height="44" FontSize="16" Margin="0,8,0,8" SelectionChanged="OnInputChanged" />
-                        <TextBox x:Name="NotesBox" Height="82" FontSize="16" TextWrapping="Wrap" AcceptsReturn="True" helpers:WatermarkService.Watermark="Observación (obligatoria para Anulación total)" TextChanged="OnNotesChanged" />
-                        <ComboBox x:Name="RefundCombo" Height="44" FontSize="16" Margin="0,12,0,12" SelectionChanged="OnInputChanged" />
+                        <Label Content="Motivo de devolución" Target="{Binding ElementName=ReasonCombo}" Style="{StaticResource RequiredLabelStyle}" helpers:FieldHelper.IsRequired="True" />
+                        <ComboBox x:Name="ReasonCombo" DisplayMemberPath="Label" SelectedValuePath="Code" MaxDropDownHeight="260" Style="{StaticResource AppFieldComboBoxStyle}" Margin="0,8,0,8" SelectionChanged="OnInputChanged" TabIndex="3" />
+                        <Label Content="Observación (obligatoria para anulación total)" Target="{Binding ElementName=NotesBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                        <TextBox x:Name="NotesBox" Height="82" MaxLength="500" Style="{StaticResource AppFieldTextBoxStyle}" TextWrapping="Wrap" AcceptsReturn="True" helpers:WatermarkService.Watermark="Explique el motivo de la anulación" TextChanged="OnNotesChanged" TabIndex="4" />
+                        <Label Content="Método de reintegro" Target="{Binding ElementName=RefundCombo}" Style="{StaticResource RequiredLabelStyle}" helpers:FieldHelper.IsRequired="True" />
+                        <ComboBox x:Name="RefundCombo" Style="{StaticResource AppFieldComboBoxStyle}" Margin="0,12,0,12" SelectionChanged="OnInputChanged" TabIndex="5" />
                         <TextBlock Text="Resumen del crédito" Style="{StaticResource AppCardLabelStyle}" />
                         <TextBlock x:Name="SubtotalText" Margin="0,8,0,0" />
                         <TextBlock x:Name="DiscountText" />
                         <TextBlock x:Name="TaxText" />
                         <TextBlock x:Name="TotalText" FontSize="22" FontWeight="Bold" Foreground="{StaticResource AppWarning}" Margin="0,4,0,4" />
                         <TextBlock x:Name="FiscalText" TextWrapping="Wrap" Margin="0,4,0,12" />
-                        <Button x:Name="ConfirmButton" Content="CONFIRMAR DEVOLUCIÓN" Width="230" Height="90" FontSize="16" IsEnabled="False" Click="OnConfirmClick" />
+                         <Button x:Name="ConfirmButton" Content="CONFIRMAR DEVOLUCIÓN (F9)" Style="{StaticResource AppDangerButtonStyle}" IsEnabled="False" Click="OnConfirmClick" AutomationProperties.Name="Confirmar devolución" AutomationProperties.AcceleratorKey="F9" TabIndex="10" />
                         <TextBlock x:Name="TechnicalMessageText" TextWrapping="Wrap" Foreground="{StaticResource AppError}" Margin="0,8,0,0" />
                     </StackPanel>
                 </Border>

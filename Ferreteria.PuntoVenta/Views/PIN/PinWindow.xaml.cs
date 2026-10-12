@@ -15,6 +15,7 @@ namespace Ferreteria.PuntoVenta.Views.PIN;
 /// Valida acceso al módulo Caja o Inventario y, si es correcto, abre <see cref="MainShellWindow"/>.
 /// Seguridad: el PIN nunca se escribe en logs ni en MessageBox; solo se muestran dots y mensajes de error genéricos.
 /// </summary>
+/// <remarks>El teclado físico acepta dígitos, Retroceso/Supr y Enter además del teclado visual.</remarks>
 public partial class PinWindow : Window
 {
     private const int PinLength = 4;
@@ -77,7 +78,7 @@ public partial class PinWindow : Window
         };
 
         MouseLeftButtonDown += OnMouseLeftButtonDown;
-        KeyDown += OnTeclaFisica;
+        PreviewKeyDown += OnTeclaFisica;
     }
 
     /// <summary>Permite arrastrar la ventana sin borde.</summary>
@@ -142,6 +143,13 @@ public partial class PinWindow : Window
         else if (e.Key == Key.Enter)
         {
             _ = ValidarPinAsync();
+        }
+
+        if (e.Key is >= Key.D0 and <= Key.D9
+            or >= Key.NumPad0 and <= Key.NumPad9
+            or Key.Back or Key.Delete or Key.Enter)
+        {
+            e.Handled = true;
         }
     }
 
