@@ -31,6 +31,11 @@
     - Se enlazan los servicios CRUD, el guard de autorización y el lockout de PIN para probar permisos en el servicio, sin referenciar el proyecto WPF.
   -->
   <ItemGroup>
+    <Compile Include="../../Ferreteria.PuntoVenta/Helpers/DecimalInputParser.cs" Link="Helpers/DecimalInputParser.cs" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Helpers/NumberFormatter.cs" Link="Helpers/NumberFormatter.cs" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Helpers/FieldConstraints.cs" Link="Helpers/FieldConstraints.cs" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Helpers/FieldConstraints.Pantallas.cs" Link="Helpers/FieldConstraints.Pantallas.cs" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Helpers/NumericInputTextRules.cs" Link="Helpers/NumericInputTextRules.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Printing/ReceiptContracts.cs" Link="Printing/ReceiptContracts.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Printing/EscPosCommands.cs" Link="Printing/EscPosCommands.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Printing/EscPosDocumentBuilder.cs" Link="Printing/EscPosDocumentBuilder.cs" />
@@ -44,6 +49,8 @@
     <Compile Include="../../Ferreteria.PuntoVenta/Services/ICurrentSessionService.cs" Link="Services/ICurrentSessionService.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/OperationalModule.cs" Link="Services/OperationalModule.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/NavSections.cs" Link="Services/NavSections.cs" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Services/NavigationShortcutMap.cs" Link="Services/NavigationShortcutMap.cs" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Services/PendingSaleNavigationGuard.cs" Link="Services/PendingSaleNavigationGuard.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/IAuditService.cs" Link="Services/IAuditService.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/AuditService.cs" Link="Services/AuditService.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Printing/IReceiptCompositionService.cs" Link="Printing/IReceiptCompositionService.cs" />
@@ -79,6 +86,7 @@
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Domain/OrderQueryFilters.cs" Link="Domain/OrderQueryFilters.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Domain/PostgresTransientRetry.cs" Link="Domain/PostgresTransientRetry.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Domain/SaleAttemptTracker.cs" Link="Domain/SaleAttemptTracker.cs" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Services/Domain/SalesDocumentRules.cs" Link="Domain/SalesDocumentRules.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/InventoryExceptions.cs" Link="Services/InventoryExceptions.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/IOrderService.cs" Link="Services/IOrderService.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/OrderContracts.cs" Link="Services/OrderContracts.cs" />

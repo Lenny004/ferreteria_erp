@@ -9,16 +9,14 @@
     WindowStyle="None"
     AllowsTransparency="True"
     Background="Transparent"
-    ResizeMode="NoResize">
+    ResizeMode="NoResize"
+    FocusManager.FocusedElement="{Binding ElementName=BtnVentas}">
+    <!-- Los módulos son controles Button: Enter y Espacio ejecutan el módulo enfocado. -->
     <Window.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary
-                    Source="/Resources/Styles/AppStyles.xaml" />
-            </ResourceDictionary.MergedDictionaries>
             <!-- Botón de módulo principal -->
             <Style
-                x:Key="EstiloBotonModulo"
+                x:Key="LegacyEstiloBotonModulo"
                 TargetType="Button">
                 <Setter
                     Property="Width"
@@ -93,7 +91,7 @@
             </Style>
             <!-- Etiqueta de botón de módulo -->
             <Style
-                x:Key="EstiloEtiquetaBoton"
+                x:Key="LegacyEstiloEtiquetaBoton"
                 TargetType="TextBlock">
                 <Setter
                     Property="FontFamily"
@@ -202,9 +200,12 @@
                     Margin="0,0,32,0">
                     <Button
                         Name="BtnVentas"
-                        Style="{StaticResource EstiloBotonModulo}"
+                        Style="{StaticResource AppModuleButtonStyle}"
                         Click="OnVentasClick"
-                        Height="124">
+                        Height="124"
+                        TabIndex="0"
+                        AutomationProperties.Name="Abrir módulo Ventas"
+                        ToolTip="Ventas (Enter/Espacio)">
                         <StackPanel>
                             <Image
                                 Source="pack://application:,,,/Ferreteria.PuntoVenta;component/Resources/Images/register.png"
@@ -212,8 +213,8 @@
                                 Height="48"
                                 Margin="0,0,0,8" />
                             <TextBlock
-                                Style="{StaticResource EstiloEtiquetaBoton}"
-                                Text="VENTAS" />
+                                Style="{StaticResource AppModuleLabelStyle}"
+                        Text="VENTAS (Enter/Espacio)" />
                         </StackPanel>
                     </Button>
                     <TextBlock
@@ -227,9 +228,12 @@
                 <StackPanel>
                     <Button
                         Name="BtnInventario"
-                        Style="{StaticResource EstiloBotonModulo}"
+                        Style="{StaticResource AppModuleButtonStyle}"
                         Click="OnInventarioClick"
-                        Height="124">
+                        Height="124"
+                        TabIndex="1"
+                        AutomationProperties.Name="Abrir módulo Inventario"
+                        ToolTip="Inventario (Enter/Espacio)">
                         <StackPanel>
                             <Image
                                 Source="pack://application:,,,/Ferreteria.PuntoVenta;component/Resources/Images/confecciones.png"
@@ -237,8 +241,8 @@
                                 Height="48"
                                 Margin="0,0,0,8" />
                             <TextBlock
-                                Style="{StaticResource EstiloEtiquetaBoton}"
-                                Text="INVENTARIO" />
+                                Style="{StaticResource AppModuleLabelStyle}"
+                        Text="INVENTARIO (Enter/Espacio)" />
                         </StackPanel>
                     </Button>
                     <TextBlock

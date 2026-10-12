@@ -1,14 +1,26 @@
 <UserControl
     x:Class="Ferreteria.PuntoVenta.Views.Inventario.ProveedoresView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:helpers="clr-namespace:Ferreteria.PuntoVenta.Helpers">
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary
-                    Source="/Resources/Styles/AppStyles.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
+    xmlns:helpers="clr-namespace:Ferreteria.PuntoVenta.Helpers"
+    xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+    FocusManager.FocusedElement="{Binding ElementName=SearchTextBox}">
+    <!-- Atajos: Ctrl+N nuevo, Ctrl+S guardar, F2/Ctrl+F buscar, Esc cancelar, F5 actualizar y Supr desactivar. -->
+    <UserControl.CommandBindings>
+        <CommandBinding Command="{x:Static input:ApplicationCommands.New}" Executed="OnNewCommandExecuted" CanExecute="OnEditCommandCanExecute" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Save}" Executed="OnSaveCommandExecuted" CanExecute="OnEditCommandCanExecute" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Find}" Executed="OnFindCommandExecuted" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Close}" Executed="OnCancelCommandExecuted" />
+        <CommandBinding Command="{x:Static input:NavigationCommands.Refresh}" Executed="OnRefreshCommandExecuted" />
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Delete}" Executed="OnDeleteCommandExecuted" CanExecute="OnDeleteCommandCanExecute" />
+    </UserControl.CommandBindings>
+    <UserControl.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{x:Static input:ApplicationCommands.New}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{x:Static input:ApplicationCommands.Save}" />
+        <KeyBinding Key="F2" Command="{x:Static input:ApplicationCommands.Find}" />
+        <KeyBinding Key="F" Modifiers="Control" Command="{x:Static input:ApplicationCommands.Find}" />
+        <KeyBinding Key="Escape" Command="{x:Static input:ApplicationCommands.Close}" />
+        <KeyBinding Key="F5" Command="{x:Static input:NavigationCommands.Refresh}" />
+        <KeyBinding Key="Delete" Command="{x:Static input:ApplicationCommands.Delete}" />
+    </UserControl.InputBindings>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -35,13 +47,20 @@
                     x:Name="SearchTextBox"
                     Style="{StaticResource AppFieldTextBoxStyle}"
                     helpers:WatermarkService.Watermark="Buscar por nombre o NIT"
-                    TextChanged="OnSearchChanged" />
+                    TextChanged="OnSearchChanged"
+                    TabIndex="0"
+                    AutomationProperties.Name="Buscar proveedor"
+                    AutomationProperties.AcceleratorKey="F2, Ctrl+F" />
                 <Button
+                    x:Name="NewButton"
                     Grid.Column="1"
                     Margin="10,0,0,0"
                     Style="{StaticResource AppSecondaryWideButtonStyle}"
-                    Click="OnNuevoClick">
-                    <TextBlock Text="NUEVO" Foreground="{StaticResource AppBlanco}" FontWeight="Bold" />
+                    Click="OnNuevoClick"
+                    TabIndex="1"
+                    AutomationProperties.Name="Nuevo proveedor"
+                    AutomationProperties.AcceleratorKey="Ctrl+N">
+                    <TextBlock Text="NUEVO (Ctrl+N)" Foreground="{StaticResource AppBlanco}" FontWeight="Bold" />
                 </Button>
             </Grid>
             <Border
@@ -77,21 +96,21 @@
                             <ItemsControl x:Name="ItemsList">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource AppDataGridRowStyle}"
-                                                Cursor="Hand"
-                                                MouseLeftButtonUp="OnRowClick"
-                                                Tag="{Binding Id}">
+                                        <Button Style="{StaticResource AppDataGridRowButtonStyle}"
+                                                Click="OnRowClick"
+                                                Tag="{Binding Id}"
+                                                TabIndex="13">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="120" />
                                                     <ColumnDefinition Width="130" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding Name}" Style="{StaticResource AppTableCellStyle}" />
+                                                <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" TextTrimming="CharacterEllipsis" Style="{StaticResource AppTableCellStyle}" />
                                                 <TextBlock Grid.Column="1" Text="{Binding Nit}" Style="{StaticResource AppTableCellStyle}" />
                                                 <TextBlock Grid.Column="2" Text="{Binding Phone}" Style="{StaticResource AppTableCellStyle}" />
                                             </Grid>
-                                        </Border>
+                                        </Button>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -110,39 +129,42 @@
             CornerRadius="{StaticResource AppRadius_MD}"
             Padding="16">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
+                <StackPanel x:Name="EditorPanel">
                     <TextBlock x:Name="FormTitle" Text="Nuevo proveedor" Style="{StaticResource AppPanelTitleStyle}" Margin="0,0,0,12" />
 
-                    <TextBlock Text="Nombre / Razon social *" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="NameBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="Nombre / Razón social" Target="{Binding ElementName=NameBox}" Style="{StaticResource RequiredLabelStyle}" helpers:FieldHelper.IsRequired="True" />
+                    <TextBox x:Name="NameBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierNameMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="Razón social" Margin="0,4,0,10" TabIndex="2" />
 
-                    <TextBlock Text="Nombre comercial" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="TradeNameBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="Nombre comercial" Target="{Binding ElementName=TradeNameBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="TradeNameBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierTradeNameMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="Nombre comercial (opcional)" Margin="0,4,0,10" TabIndex="3" />
 
-                    <TextBlock Text="NIT" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="NitBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="NIT" Target="{Binding ElementName=NitBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="NitBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierNitMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="NIT (opcional)" Margin="0,4,0,10" TabIndex="4" />
 
-                    <TextBlock Text="NRC" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="NrcBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="NRC" Target="{Binding ElementName=NrcBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="NrcBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierNrcMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="NRC (opcional)" Margin="0,4,0,10" TabIndex="5" />
 
-                    <TextBlock Text="Contacto" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="ContactBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="Contacto" Target="{Binding ElementName=ContactBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="ContactBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierContactNameMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="Persona de contacto" Margin="0,4,0,10" TabIndex="6" />
 
-                    <TextBlock Text="Telefono" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="PhoneBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="Teléfono" Target="{Binding ElementName=PhoneBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="PhoneBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierPhoneMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="Teléfono (opcional)" Margin="0,4,0,10" TabIndex="7" />
 
-                    <TextBlock Text="Correo" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="EmailBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="Correo" Target="{Binding ElementName=EmailBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="EmailBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierEmailMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="correo@ejemplo.com" Margin="0,4,0,10" TabIndex="8" />
 
-                    <TextBlock Text="Direccion" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="AddressBox" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="Dirección" Target="{Binding ElementName=AddressBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="AddressBox" MaxLength="{x:Static helpers:FieldConstraints.SupplierAddressMaxLength}" Style="{StaticResource AppFieldTextBoxStyle}" helpers:WatermarkService.Watermark="Dirección (opcional)" Margin="0,4,0,10" TabIndex="9" />
 
-                    <TextBlock Text="Dias de credito" Style="{StaticResource AppCardLabelStyle}" />
-                    <TextBox x:Name="CreditDaysBox" Text="0" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" />
+                    <Label Content="País" Target="{Binding ElementName=CountryBox}" Style="{StaticResource RequiredLabelStyle}" helpers:FieldHelper.IsRequired="True" />
+                    <TextBox x:Name="CountryBox" Text="SV — asignado automáticamente" IsReadOnly="True" Style="{StaticResource AppFieldTextBoxStyle}" Margin="0,4,0,10" AutomationProperties.Name="País del proveedor" TabIndex="10" />
 
-                    <TextBlock Text="Notas" Style="{StaticResource AppCardLabelStyle}" />
+                    <Label Content="Días de crédito" Target="{Binding ElementName=CreditDaysBox}" Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox x:Name="CreditDaysBox" Text="0" Style="{StaticResource AppFieldTextBoxStyle}" helpers:NumericInput.IsEnabled="True" helpers:NumericInput.Precision="9" helpers:NumericInput.Scale="0" helpers:WatermarkService.Watermark="0" Margin="0,4,0,10" TabIndex="11" />
+
+                    <Label Content="Notas" Target="{Binding ElementName=NotesBox}" Style="{StaticResource AppFieldLabelStyle}" />
                     <TextBox x:Name="NotesBox" Style="{StaticResource AppFieldTextBoxStyle}"
-                             TextWrapping="Wrap" AcceptsReturn="True" Height="60" Margin="0,4,0,10" />
+                             helpers:WatermarkService.Watermark="Notas internas (opcional)" TextWrapping="Wrap" AcceptsReturn="True" Height="60" Margin="0,4,0,10" TabIndex="12" />
 
                     <TextBlock x:Name="FormErrorText" Foreground="{StaticResource AppError}"
                                TextWrapping="Wrap" Visibility="Collapsed" Margin="0,0,0,8" />
@@ -152,16 +174,16 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Button Style="{StaticResource AppPrimaryWideButtonStyle}" Click="OnGuardarClick" Margin="0,0,6,0">
-                            <TextBlock Text="GUARDAR" Foreground="{StaticResource AppBlanco}" FontWeight="Bold" />
+                        <Button x:Name="SaveButton" Style="{StaticResource AppPrimaryWideButtonStyle}" Click="OnGuardarClick" Margin="0,0,6,0" TabIndex="20" AutomationProperties.Name="Guardar proveedor" AutomationProperties.AcceleratorKey="Ctrl+S">
+                            <TextBlock Text="GUARDAR (Ctrl+S)" Foreground="{StaticResource AppBlanco}" FontWeight="Bold" />
                         </Button>
-                        <Button Grid.Column="1" Style="{StaticResource AppSecondaryWideButtonStyle}" Click="OnCancelarClick" Margin="6,0,0,0">
-                            <TextBlock Text="LIMPIAR" Foreground="{StaticResource AppBlanco}" FontWeight="Bold" />
+                        <Button Grid.Column="1" Style="{StaticResource AppSecondaryWideButtonStyle}" Click="OnCancelarClick" Margin="6,0,0,0" TabIndex="21" AutomationProperties.Name="Cancelar edición" AutomationProperties.AcceleratorKey="Escape">
+                            <TextBlock Text="LIMPIAR (Esc)" Foreground="{StaticResource AppBlanco}" FontWeight="Bold" />
                         </Button>
                     </Grid>
                     <Button x:Name="DeactivateButton" Style="{StaticResource AppSecondaryWideButtonStyle}"
-                            Click="OnDesactivarClick" Margin="0,10,0,0" Visibility="Collapsed">
-                        <TextBlock Text="DESACTIVAR" Foreground="{StaticResource AppError}" FontWeight="Bold" />
+                            Click="OnDesactivarClick" Margin="0,10,0,0" Visibility="Collapsed" TabIndex="22" AutomationProperties.Name="Desactivar proveedor" AutomationProperties.AcceleratorKey="Delete">
+                        <TextBlock Text="DESACTIVAR (Supr)" Foreground="{StaticResource AppError}" FontWeight="Bold" />
                     </Button>
                 </StackPanel>
             </ScrollViewer>

@@ -1,14 +1,18 @@
 <UserControl
     x:Class="Ferreteria.PuntoVenta.Views.Caja.ConsultarStockView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:helpers="clr-namespace:Ferreteria.PuntoVenta.Helpers">
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary
-                    Source="/Resources/Styles/AppStyles.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
+    xmlns:helpers="clr-namespace:Ferreteria.PuntoVenta.Helpers"
+    xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+    FocusManager.FocusedElement="{Binding ElementName=SearchTextBox}">
+    <!-- Atajos: F2/Ctrl+F enfocar búsqueda y F5 actualizar. -->
+    <UserControl.CommandBindings>
+        <CommandBinding Command="{x:Static input:ApplicationCommands.Find}" Executed="OnFindCommandExecuted" />
+        <CommandBinding Command="{x:Static input:NavigationCommands.Refresh}" Executed="OnRefreshCommandExecuted" />
+    </UserControl.CommandBindings>
+    <UserControl.InputBindings>
+        <KeyBinding Key="F2" Command="{x:Static input:ApplicationCommands.Find}" />
+        <KeyBinding Key="F" Modifiers="Control" Command="{x:Static input:ApplicationCommands.Find}" />
+        <KeyBinding Key="F5" Command="{x:Static input:NavigationCommands.Refresh}" />
+    </UserControl.InputBindings>
     <ScrollViewer
         VerticalScrollBarVisibility="Auto">
         <Grid>
@@ -35,13 +39,16 @@
                         Text="Consultar Stock"
                         Style="{StaticResource AppPanelTitleStyle}" />
                     <TextBlock
-                        Text="Vista rapida del inventario disponible y alertas de stock"
+                        Text="Vista rápida del inventario disponible y alertas de stock · F2/Ctrl+F buscar · F5 actualizar"
                         Style="{StaticResource AppPanelSubtitleStyle}" />
                 </StackPanel>
                 <Button
                     Grid.Column="1"
                     Style="{StaticResource AppSecondaryWideButtonStyle}"
-                    Click="OnActualizarClick">
+                    Click="OnActualizarClick"
+                    TabIndex="2"
+                    AutomationProperties.Name="Actualizar stock"
+                    AutomationProperties.AcceleratorKey="F5">
                     <TextBlock
                         Text="ACTUALIZAR"
                         Foreground="{StaticResource AppBlanco}"
@@ -114,18 +121,31 @@
                     <ColumnDefinition
                         Width="*" />
                     <ColumnDefinition
-                        Width="140" />
+                        Width="170" />
                 </Grid.ColumnDefinitions>
-                <TextBox
-                    x:Name="SearchTextBox"
-                    Style="{StaticResource AppFieldTextBoxStyle}"
-                    helpers:WatermarkService.Watermark="Buscar codigo, descripcion o familia"
-                    TextChanged="OnSearchChanged" />
+                <StackPanel>
+                    <Label
+                        Content="Buscar producto (F2/Ctrl+F)"
+                        Target="{Binding ElementName=SearchTextBox}"
+                        Style="{StaticResource AppFieldLabelStyle}" />
+                    <TextBox
+                        x:Name="SearchTextBox"
+                        MaxLength="{x:Static helpers:FieldConstraints.ProductSearchMaxLength}"
+                        Style="{StaticResource AppFieldTextBoxStyle}"
+                        helpers:WatermarkService.Watermark="Buscar código, descripción o familia"
+                        TextChanged="OnSearchChanged"
+                        TabIndex="0"
+                        AutomationProperties.Name="Buscar producto"
+                        AutomationProperties.AcceleratorKey="F2, Ctrl+F" />
+                </StackPanel>
                 <ComboBox
                     x:Name="StatusFilterCombo"
                     Grid.Column="1"
                     Style="{StaticResource AppFieldComboBoxStyle}"
                     Margin="10,0,0,0"
+                    VerticalAlignment="Bottom"
+                    TabIndex="1"
+                    AutomationProperties.Name="Filtrar estado de stock"
                     SelectedIndex="0"
                     SelectionChanged="OnStatusFilterChanged">
                     <ComboBoxItem
@@ -207,7 +227,10 @@
                             <ItemsControl x:Name="ProductsItemsControl">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource AppDataGridRowStyle}">
+                                        <Button
+                                            Style="{StaticResource AppDataGridRowButtonStyle}"
+                                            AutomationProperties.Name="Producto de inventario"
+                                            TabIndex="3">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="130" />
@@ -220,19 +243,27 @@
                                                 <TextBlock
                                                     Text="{Binding Code}"
                                                     Style="{StaticResource AppTableCellStyle}"
-                                                    Foreground="{StaticResource AppRojo}" />
+                                                    Foreground="{StaticResource AppRojo}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTip="{Binding Code}" />
                                                 <TextBlock
                                                     Grid.Column="1"
                                                     Text="{Binding Description}"
-                                                    Style="{StaticResource AppTableCellStyle}" />
+                                                    Style="{StaticResource AppTableCellStyle}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTip="{Binding Description}" />
                                                 <TextBlock
                                                     Grid.Column="2"
                                                     Text="{Binding Family}"
-                                                    Style="{StaticResource AppTableCellStyle}" />
+                                                    Style="{StaticResource AppTableCellStyle}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTip="{Binding Family}" />
                                                 <TextBlock
                                                     Grid.Column="3"
                                                     Text="{Binding Measurement}"
-                                                    Style="{StaticResource AppTableCellStyle}" />
+                                                    Style="{StaticResource AppTableCellStyle}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTip="{Binding Measurement}" />
                                                 <TextBlock
                                                     Grid.Column="4"
                                                     Text="{Binding FormattedStock}"
@@ -247,7 +278,7 @@
                                                         FontSize="{StaticResource AppFontSize_XS}" />
                                                 </Border>
                                             </Grid>
-                                        </Border>
+                                        </Button>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

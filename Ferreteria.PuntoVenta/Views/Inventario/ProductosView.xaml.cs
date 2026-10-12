@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using Ferreteria.PuntoVenta.Helpers;
 using System.Windows.Input;
 using Ferreteria.PuntoVenta.Models;
 using Ferreteria.PuntoVenta.Services;
@@ -12,6 +13,7 @@ namespace Ferreteria.PuntoVenta.Views.Inventario;
 /// Catálogo de Product (módulo Inventario): alta, edición y desactivación de productos,
 /// con familias, medidas y proveedor. El stock en edición se ajusta vía Entradas/Kardex.
 /// </summary>
+/// <remarks>Atajos: Ctrl+N nuevo, Ctrl+S guardar, F2/Ctrl+F buscar, Esc cancelar, F5 actualizar y Supr desactivar.</remarks>
 public partial class ProductosView : UserControl
 {
     private readonly IProductCatalogService _catalog;
@@ -45,7 +47,7 @@ public partial class ProductosView : UserControl
         try
         {
             var permissions = await _authorizationGuard.GetGrantedPermissionsAsync();
-            _canEdit = permissions.Contains(PosPermission.AdministrarCatalogo);
+            _canEdit = InventoryViewPermissionPolicy.CanEditProducts(permissions);
             NewButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
             SaveButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
             EditorPanel.IsEnabled = _canEdit;
@@ -74,12 +76,41 @@ public partial class ProductosView : UserControl
     private async Task ReloadAsync()
     {
         var items = await _catalog.GetProductsAsync(SearchTextBox.Text);
-        ItemsList.ItemsSource = items;
+        ItemsList.ItemsSource = items.Select(product => new ProductListDisplay(product)).ToList();
         EmptyStateText.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>Handler de búsqueda por código/descripción.</summary>
     private async void OnSearchChanged(object sender, TextChangedEventArgs e) => await ReloadAsync();
+
+    /// <summary>Ejecuta Nuevo desde el teclado.</summary>
+    private void OnNewCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnNuevoClick(sender, e);
+
+    /// <summary>Ejecuta Guardar desde el teclado.</summary>
+    private void OnSaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnGuardarClick(sender, e);
+
+    /// <summary>Enfoca el filtro de productos.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        SearchTextBox.Focus();
+        SearchTextBox.SelectAll();
+    }
+
+    /// <summary>Ejecuta Cancelar desde el teclado.</summary>
+    private void OnCancelCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnCancelarClick(sender, e);
+
+    /// <summary>Recarga el catálogo desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await ReloadAsync();
+
+    /// <summary>Ejecuta la desactivación conservando la confirmación existente.</summary>
+    private void OnDeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnDesactivarClick(sender, e);
+
+    /// <summary>Habilita comandos de edición solo con permiso y selección válida.</summary>
+    private void OnEditCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _canEdit && (e.Command != ApplicationCommands.Delete || _selectedId.HasValue);
+        e.Handled = true;
+    }
 
     /// <summary>Prepara el formulario para un producto nuevo.</summary>
     private void OnNuevoClick(object sender, RoutedEventArgs e) => ClearForm();
@@ -101,7 +132,7 @@ public partial class ProductosView : UserControl
     }
 
     /// <summary>Selecciona un producto de la lista y rellena el formulario de edición.</summary>
-    private async void OnRowClick(object sender, MouseButtonEventArgs e)
+    private async void OnRowClick(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { Tag: Guid id })
         {
@@ -128,7 +159,7 @@ public partial class ProductosView : UserControl
         CostPriceBox.Text = product.CostPrice.ToString(CultureInfo.InvariantCulture);
         StockBox.Text = product.CurrentStock.ToString(CultureInfo.InvariantCulture);
         StockBox.IsEnabled = false;
-        StockLabel.Text = "Stock actual (usar Entradas/Kardex)";
+        StockLabel.Content = "Stock actual (usar Entradas/Kardex)";
         MinStockBox.Text = product.MinStock.ToString(CultureInfo.InvariantCulture);
         NotesBox.Text = product.Notes;
         DeactivateButton.Visibility = Visibility.Visible;
@@ -170,14 +201,38 @@ public partial class ProductosView : UserControl
             return;
         }
 
-        if (!TryParseDecimal(SalePriceBox.Text, out var salePrice) ||
-            !TryParseDecimal(CostPriceBox.Text, out var costPrice) ||
-            !TryParseDecimal(StockBox.Text, out var stock) ||
-            !TryParseDecimal(MinStockBox.Text, out var minStock))
+        var salePriceResult = DecimalInputParser.Parse(SalePriceBox.Text, precision: 12, scale: 2, allowNegative: false);
+        if (!salePriceResult.IsValid)
         {
-            ShowError("Revise los valores numericos (precio, costo, stock).");
+            ShowError(salePriceResult.ErrorMessage!);
             return;
         }
+
+        var costPriceResult = DecimalInputParser.Parse(CostPriceBox.Text, precision: 12, scale: 4, allowNegative: false);
+        if (!costPriceResult.IsValid)
+        {
+            ShowError(costPriceResult.ErrorMessage!);
+            return;
+        }
+
+        var stockResult = DecimalInputParser.Parse(StockBox.Text, precision: 12, scale: 3, allowNegative: false);
+        if (!stockResult.IsValid)
+        {
+            ShowError(stockResult.ErrorMessage!);
+            return;
+        }
+
+        var minStockResult = DecimalInputParser.Parse(MinStockBox.Text, precision: 12, scale: 3, allowNegative: false);
+        if (!minStockResult.IsValid)
+        {
+            ShowError(minStockResult.ErrorMessage!);
+            return;
+        }
+
+        var salePrice = salePriceResult.Value!.Value;
+        var costPrice = costPriceResult.Value!.Value;
+        var stock = stockResult.Value!.Value;
+        var minStock = minStockResult.Value!.Value;
 
         var input = new ProductInput(
             CodeBox.Text,
@@ -237,7 +292,7 @@ public partial class ProductosView : UserControl
             return;
         }
 
-        if (MessageBox.Show("Desactivar este producto?", "Productos",
+        if (MessageBox.Show("¿Desea desactivar este producto?", "Productos",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
         {
             return;
@@ -271,7 +326,7 @@ public partial class ProductosView : UserControl
         SupplierCombo.SelectedIndex = -1;
         SalePriceBox.Text = CostPriceBox.Text = StockBox.Text = MinStockBox.Text = "0";
         StockBox.IsEnabled = true;
-        StockLabel.Text = "Stock inicial";
+        StockLabel.Content = "Stock inicial";
         DeactivateButton.Visibility = Visibility.Collapsed;
         HideError();
     }
@@ -286,12 +341,16 @@ public partial class ProductosView : UserControl
     /// <summary>Oculta el mensaje de error del formulario.</summary>
     private void HideError() => FormErrorText.Visibility = Visibility.Collapsed;
 
-    /// <summary>Parsea decimal aceptando cultura invariante o actual.</summary>
-    private static bool TryParseDecimal(string? text, out decimal value) =>
-        decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out value) ||
-        decimal.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out value);
-
     /// <summary>Convierte cadena vacía en null para campos opcionales.</summary>
     private static string? NullIfEmpty(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed record ProductListDisplay(Product Product)
+    {
+        public Guid Id => Product.Id;
+        public string Code => Product.Code;
+        public string Description => Product.Description;
+        public string CurrentStock => NumberFormatter.Quantity(Product.CurrentStock);
+        public string SalePrice => NumberFormatter.Currency(Product.SalePrice);
+    }
 }

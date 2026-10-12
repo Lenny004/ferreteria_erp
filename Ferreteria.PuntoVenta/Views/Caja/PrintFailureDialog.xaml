@@ -3,19 +3,13 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Impresión de ticket"
+    Style="{StaticResource AppDialogWindowStyle}"
     Width="640"
     SizeToContent="Height"
     ResizeMode="NoResize"
     WindowStartupLocation="CenterOwner"
-    KeyDown="OnKeyDown">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary
-                    Source="/Resources/Styles/AppStyles.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
+    FocusManager.FocusedElement="{Binding ElementName=RetryButton}"
+    >
     <Grid
         Background="{StaticResource AppAzulOscuro}">
         <Grid
@@ -46,14 +40,18 @@
             Orientation="Horizontal"
             HorizontalAlignment="Right">
             <Button
+                x:Name="RetryButton"
                 Style="{StaticResource AppPrimaryWideButtonStyle}"
                 Width="200"
                 Height="90"
                 Margin="0,0,12,0"
                 IsDefault="True"
-                Click="OnRetryClick">
+                Click="OnRetryClick"
+                TabIndex="0"
+                AutomationProperties.Name="Reintentar impresión"
+                AutomationProperties.AcceleratorKey="Enter">
                 <TextBlock
-                    Text="REINTENTAR"
+                    Text="REINTENTAR (Enter)"
                     Foreground="{StaticResource AppBlanco}"
                     FontSize="{StaticResource AppFontSize_LG}"
                     FontWeight="Bold" />
@@ -63,9 +61,12 @@
                 Width="200"
                 Height="90"
                 IsCancel="True"
-                Click="OnContinueClick">
+                Click="OnContinueClick"
+                TabIndex="1"
+                AutomationProperties.Name="Continuar sin imprimir"
+                AutomationProperties.AcceleratorKey="Escape">
                 <TextBlock
-                    Text="CONTINUAR"
+                    Text="CONTINUAR (Esc)"
                     Foreground="{StaticResource AppBlanco}"
                     FontSize="{StaticResource AppFontSize_LG}"
                     FontWeight="Bold" />
