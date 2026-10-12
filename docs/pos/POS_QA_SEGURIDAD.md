@@ -62,6 +62,25 @@ dotnet test tests/Ferreteria.PuntoVenta.Tests/Ferreteria.PuntoVenta.Tests.csproj
 - `Esc`: cierra primero la búsqueda o popup abierto; si no hay uno, solicita confirmación para cancelar la venta en curso.
 - `Supr`: quita la línea seleccionada después de confirmación.
 
+### E3: teclado, foco y navegación
+
+Los atajos de E3 se ejecutan sobre los comandos de la vista y conservan la misma validación, permisos y confirmación que los botones visibles:
+
+- Productos, Proveedores y Usuarios: `Ctrl+N` nuevo, `Ctrl+S` guardar, `F2` o `Ctrl+F` enfocar búsqueda, `Esc` cancelar/limpiar edición, `F5` actualizar y `Supr` desactivar el registro seleccionado con confirmación.
+- Movimientos: `F2` o `Ctrl+F` enfocar la búsqueda editable de producto y `F5` actualizar el kardex.
+- Alertas: `F2` o `Ctrl+F` enfocar el filtro por código/descripción/estado y `F5` actualizar las alertas activas.
+- Consultar stock: `F2` o `Ctrl+F` enfocar la búsqueda/filtro y `F5` actualizar.
+- Historial de facturas: `F2` o `Ctrl+F` enfocar búsqueda, `F5` actualizar y `Enter` abrir el detalle de la venta seleccionada.
+- Corte de caja: `F5` actualizar, `F9` cerrar el turno y `Esc` solicitar el cierre; ambos últimos conservan la confirmación existente.
+- Devoluciones: `F2` o `Ctrl+F` enfocar la búsqueda, `F9` confirmar la devolución (incluye autorización PIN) y `Esc` cancelar la selección actual.
+- Impresoras: `Ctrl+S` guardar, `F5` actualizar y `Esc` cancelar la edición local sin persistir cambios.
+- MainShellWindow: `Ctrl+1` a `Ctrl+9` navegan las secciones visibles en el orden del menú. El índice se recalcula después de aplicar permisos, por lo que una sección no autorizada no se abre por atajo. `F5` actualiza el estado de conectividad.
+- PinWindow: las teclas físicas `0`–`9` y del teclado numérico agregan dígitos, `Retroceso`/`Supr` borra el último y `Enter` valida el PIN de cuatro dígitos.
+- InicioWindow: los botones de Ventas e Inventario reciben foco en orden visual y se activan con `Enter` o `Espacio`.
+- Diálogos de autorización, rango, detalle y vistas previas: el botón principal tiene `IsDefault`/`Enter`, el botón de salida tiene `IsCancel`/`Esc`, el foco inicial es lógico, la ventana se centra en su propietario y se usa el estilo de diálogo estándar.
+
+La pista visible y `AutomationProperties.AcceleratorKey` acompañan a cada acción disponible. El orden `TabIndex` sigue el recorrido visual: búsqueda/filtros, formulario y pie de acciones.
+
 El selector de documento usa `01 Factura` por defecto y `03 Crédito fiscal` cuando el cajero lo elige. El servicio exige, además de un cliente activo, NIT y NRC para `03`; la venta se rechaza antes de crear la orden si falta cualquiera de esos datos. El criterio fiscal queda marcado en el código para verificación con contador.
 
 ## Riesgos y verificaciones externas

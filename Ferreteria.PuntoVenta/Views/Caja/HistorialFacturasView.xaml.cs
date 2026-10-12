@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Ferreteria.PuntoVenta.Helpers;
 using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Domain;
 using Ferreteria.PuntoVenta.Services.Dte;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace Ferreteria.PuntoVenta.Views.Caja;
 
 /// <summary>Vista táctil para consultar, detallar y reimprimir ventas.</summary>
+/// <remarks>Atajos: F2/Ctrl+F buscar, F5 actualizar y Enter abrir el detalle seleccionado.</remarks>
 public partial class HistorialFacturasView : UserControl
 {
     private const int PageSize = 25;
@@ -88,6 +90,26 @@ public partial class HistorialFacturasView : UserControl
 
     private async void OnLoaded(object sender, RoutedEventArgs e) => await LoadAsync();
     private void OnUnloaded(object sender, RoutedEventArgs e) => _searchCoordinator.Dispose();
+
+    /// <summary>Enfoca y selecciona el texto de búsqueda del historial.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        SearchTextBox.Focus();
+        SearchTextBox.SelectAll();
+    }
+
+    /// <summary>Recarga el historial desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await LoadAsync();
+
+    /// <summary>Abre el detalle de la venta seleccionada desde Enter.</summary>
+    private async void OnOpenCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await ShowDetailAsync();
+
+    /// <summary>Permite Enter solo cuando el foco está en la lista y hay una venta seleccionada.</summary>
+    private void OnOpenCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = SalesListBox.IsKeyboardFocusWithin && SalesListBox.SelectedItem is SalesHistoryRow;
+        e.Handled = true;
+    }
 
     private async void OnSearchChanged(object sender, TextChangedEventArgs e)
     {
@@ -207,15 +229,6 @@ public partial class HistorialFacturasView : UserControl
     private async void OnDetailClick(object sender, RoutedEventArgs e) => await ShowDetailAsync();
     private async void OnSaleDoubleClick(object sender, MouseButtonEventArgs e) => await ShowDetailAsync();
 
-    private async void OnSalesListKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            e.Handled = true;
-            await ShowDetailAsync();
-        }
-    }
-
     private async Task ShowDetailAsync()
     {
         if (SalesListBox.SelectedItem is not SalesHistoryRow selected || _session.CurrentEmployee is null)
@@ -299,8 +312,8 @@ public partial class HistorialFacturasView : UserControl
             }
             EmptyStateText.Visibility = _currentPage.Rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             SalesCountText.Text = _currentPage.Summary.Sales.ToString();
-            TotalBilledText.Text = _currentPage.Summary.Total.ToString("C2");
-            TaxText.Text = _currentPage.Summary.Tax.ToString("C2");
+            TotalBilledText.Text = NumberFormatter.Currency(_currentPage.Summary.Total);
+            TaxText.Text = NumberFormatter.Currency(_currentPage.Summary.Tax);
             ContingencyText.Text = _currentPage.Summary.Contingencies.ToString();
             ReprintsText.Text = _currentPage.Summary.Reprints.ToString();
             PageText.Text = $"Página {_page}";

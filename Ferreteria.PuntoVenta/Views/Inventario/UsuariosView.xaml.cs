@@ -14,12 +14,15 @@ namespace Ferreteria.PuntoVenta.Views.Inventario;
 /// ABM de Employee (usuarios / RRHH): datos laborales, permisos de caja/venta y PIN de acceso.
 /// Seguridad: el PIN se captura en PasswordBox, nunca se lee desde BD al editar ni se registra en logs.
 /// </summary>
+/// <remarks>Atajos: Ctrl+N nuevo, Ctrl+S guardar, F2/Ctrl+F buscar, Esc cancelar, F5 actualizar y Supr desactivar.</remarks>
 public partial class UsuariosView : UserControl
 {
     private readonly IEmployeeService _employees;
     private readonly ICurrentSessionService _currentSession;
+    private readonly IAuthorizationGuard _authorizationGuard;
     private readonly IPinUnlockService _pinUnlock;
     private readonly string _defaultCashRegisterCode;
+    private bool _canEdit;
     private Guid? _selectedId;
 
     /// <summary>Inicializa la vista e hidrata departamentos/puestos al Loaded.</summary>
@@ -27,10 +30,12 @@ public partial class UsuariosView : UserControl
         IEmployeeService employees,
         ICurrentSessionService currentSession,
         IPinUnlockService pinUnlock,
-        IOptions<CashRegisterOptions> cashRegisterOptions)
+        IOptions<CashRegisterOptions> cashRegisterOptions,
+        IAuthorizationGuard authorizationGuard)
     {
         _employees = employees;
         _currentSession = currentSession;
+        _authorizationGuard = authorizationGuard;
         _pinUnlock = pinUnlock;
         ArgumentNullException.ThrowIfNull(cashRegisterOptions);
         _defaultCashRegisterCode = cashRegisterOptions.Value.Codigo;
@@ -47,6 +52,17 @@ public partial class UsuariosView : UserControl
     {
         try
         {
+            var permissions = await _authorizationGuard.GetGrantedPermissionsAsync();
+            _canEdit = InventoryViewPermissionPolicy.CanEditUsers(permissions);
+            NewButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
+            SaveButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
+            EditorPanel.IsEnabled = _canEdit;
+            if (!_canEdit)
+            {
+                FormTitle.Text = "Usuarios y RRHH (solo lectura)";
+                ShowError("No tiene permiso para administrar usuarios.");
+            }
+
             DepartmentCombo.ItemsSource = await _employees.GetDepartmentsAsync();
             PositionCombo.ItemsSource = await _employees.GetPositionsAsync(null);
             HireDatePicker.SelectedDate = DateTime.Today;
@@ -73,8 +89,50 @@ public partial class UsuariosView : UserControl
     /// <summary>Handler de búsqueda por nombre/DUI.</summary>
     private async void OnSearchChanged(object sender, TextChangedEventArgs e) => await ReloadAsync();
 
+    /// <summary>Ejecuta Nuevo desde el teclado.</summary>
+    private void OnNewCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnNuevoClick(sender, e);
+
+    /// <summary>Ejecuta Guardar desde el teclado.</summary>
+    private void OnSaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnGuardarClick(sender, e);
+
+    /// <summary>Habilita Nuevo y Guardar solo con permiso de administración de usuarios.</summary>
+    private void OnEditCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _canEdit;
+        e.Handled = true;
+    }
+
+    /// <summary>Enfoca el filtro de usuarios.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        SearchTextBox.Focus();
+        SearchTextBox.SelectAll();
+    }
+
+    /// <summary>Ejecuta Cancelar desde el teclado.</summary>
+    private void OnCancelCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnCancelarClick(sender, e);
+
+    /// <summary>Recarga usuarios desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await ReloadAsync();
+
+    /// <summary>Ejecuta la desactivación conservando la confirmación existente.</summary>
+    private void OnDeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnDesactivarClick(sender, e);
+
+    /// <summary>Habilita Supr solo cuando hay un usuario seleccionado.</summary>
+    private void OnDeleteCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = _selectedId.HasValue;
+        e.Handled = true;
+    }
+
     /// <summary>Prepara el formulario para un usuario nuevo (PIN obligatorio).</summary>
-    private void OnNuevoClick(object sender, RoutedEventArgs e) => ClearForm();
+    private void OnNuevoClick(object sender, RoutedEventArgs e)
+    {
+        if (_canEdit)
+        {
+            ClearForm();
+        }
+    }
 
     /// <summary>Cancela la edición y limpia el formulario.</summary>
     private void OnCancelarClick(object sender, RoutedEventArgs e) => ClearForm();
@@ -90,7 +148,7 @@ public partial class UsuariosView : UserControl
     /// Selecciona un Employee y rellena el formulario.
     /// El PasswordBox de PIN queda vacío a propósito (no se recupera el hash).
     /// </summary>
-    private async void OnRowClick(object sender, MouseButtonEventArgs e)
+    private async void OnRowClick(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { Tag: Guid id })
         {
@@ -120,7 +178,7 @@ public partial class UsuariosView : UserControl
         CanCashierCheck.IsChecked = employee.CanCashier;
         CanSellCheck.IsChecked = employee.CanSell;
         PinBox.Password = string.Empty;
-        PinLabel.Text = "Nuevo PIN (dejar vacio para no cambiar)";
+        PinLabel.Content = "Nuevo PIN (dejar vacío para no cambiar)";
         DeactivateButton.Visibility = Visibility.Visible;
         HideError();
     }
@@ -130,6 +188,12 @@ public partial class UsuariosView : UserControl
     /// </summary>
     private async void OnGuardarClick(object sender, RoutedEventArgs e)
     {
+        if (!_canEdit)
+        {
+            ShowError("No tiene permiso para administrar usuarios.");
+            return;
+        }
+
         HideError();
 
         if (string.IsNullOrWhiteSpace(FirstNameBox.Text) || string.IsNullOrWhiteSpace(LastNameBox.Text))
@@ -221,7 +285,7 @@ public partial class UsuariosView : UserControl
             return;
         }
 
-        if (MessageBox.Show("Desactivar este usuario?", "Usuarios",
+        if (MessageBox.Show("¿Desea desactivar este usuario?", "Usuarios",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
         {
             return;
@@ -291,7 +355,7 @@ public partial class UsuariosView : UserControl
         CanCashierCheck.IsChecked = false;
         CanSellCheck.IsChecked = false;
         PinBox.Password = string.Empty;
-        PinLabel.Text = "PIN de acceso (4 digitos) *";
+        PinLabel.Content = "PIN de acceso (4 dígitos)";
         DeactivateButton.Visibility = Visibility.Collapsed;
         HideError();
     }

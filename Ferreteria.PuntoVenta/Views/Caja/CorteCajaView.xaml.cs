@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Ferreteria.PuntoVenta.Helpers;
 using Ferreteria.PuntoVenta.Models;
 using Ferreteria.PuntoVenta.Services;
@@ -15,6 +16,7 @@ namespace Ferreteria.PuntoVenta.Views.Caja;
 /// <remarks>
 /// La autorización y el cálculo definitivo se repiten en <see cref="ICashSessionService"/> dentro de PostgreSQL.
 /// Esta vista solo coordina la captura táctil, la presentación y la impresión posterior al cierre.
+/// Atajos: F5 actualizar y F9 cerrar turno; Escape no ejecuta el cierre.
 /// </remarks>
 public partial class CorteCajaView : UserControl
 {
@@ -59,6 +61,19 @@ public partial class CorteCajaView : UserControl
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         await LoadAsync();
+    }
+
+    /// <summary>Actualiza el resumen del turno desde el teclado.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e) => await LoadAsync();
+
+    /// <summary>Solicita el cierre usando la misma confirmación del botón visible.</summary>
+    private void OnCloseCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnCloseClick(sender, e);
+
+    /// <summary>Habilita F9 y Escape únicamente mientras el turno puede cerrarse.</summary>
+    private void OnCloseCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = CloseButton.IsEnabled;
+        e.Handled = true;
     }
 
     /// <summary>Obtiene y presenta el resumen autorizado del turno.</summary>
@@ -169,7 +184,7 @@ public partial class CorteCajaView : UserControl
 
         if (MessageBox.Show(
                 Window.GetWindow(this),
-                $"¿Confirma cerrar el turno? {difference.DisplayText}.",
+                $"¿Desea cerrar el turno? {difference.DisplayText}.",
                 "Confirmar cierre",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question) != MessageBoxResult.Yes)
@@ -272,7 +287,9 @@ public partial class CorteCajaView : UserControl
         TransferText.Text = NumberFormatter.Currency(_summary.TransferPayments);
         DteText.Text = _summary.DteCount.ToString(CultureInfo.InvariantCulture);
         SessionText.Text = $"Esperado: {NumberFormatter.Currency(_summary.ExpectedCash)}";
-        MovementItemsControl.ItemsSource = _summary.Movements;
+        MovementItemsControl.ItemsSource = _summary.Movements
+            .Select(movement => new CashMovementDisplay(movement))
+            .ToList();
     }
 
     /// <summary>Reintenta imprimir el reporte del último cierre.</summary>
@@ -348,5 +365,14 @@ public partial class CorteCajaView : UserControl
     {
         StatusText.Text = message;
         StatusText.Foreground = (System.Windows.Media.Brush)FindResource(isError ? "AppError" : "AppSuccess");
+    }
+
+    private sealed record CashMovementDisplay(CashRegisterMovement Movement)
+    {
+        public string LocalTimeText => Movement.LocalTimeText;
+        public string DocumentNumber => Movement.DocumentNumber;
+        public string PaymentMethod => Movement.PaymentMethod;
+        public string AmountText => NumberFormatter.Currency(Movement.Amount);
+        public string Status => Movement.Status;
     }
 }
