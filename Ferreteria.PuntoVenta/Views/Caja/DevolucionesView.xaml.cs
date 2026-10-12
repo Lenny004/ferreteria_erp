@@ -1,5 +1,8 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Input;
+using Ferreteria.PuntoVenta.Helpers;
 using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Returns;
 using Microsoft.Extensions.Logging;
@@ -8,6 +11,7 @@ using Microsoft.Extensions.Options;
 namespace Ferreteria.PuntoVenta.Views.Caja;
 
 /// <summary>Vista guiada para buscar, calcular y confirmar devoluciones POS.</summary>
+/// <remarks>Atajos: F2/Ctrl+F buscar, F9 confirmar con autorización y Esc cancelar la selección.</remarks>
 public partial class DevolucionesView : UserControl
 {
     private readonly IReturnService _returnService;
@@ -50,6 +54,26 @@ public partial class DevolucionesView : UserControl
             : _returnService.Capabilities.Message;
         UpdateSummary();
     }
+
+    /// <summary>Enfoca y selecciona el criterio de búsqueda de venta.</summary>
+    private void OnFindCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        SearchTextBox.Focus();
+        SearchTextBox.SelectAll();
+    }
+
+    /// <summary>Confirma la devolución usando la autorización y confirmaciones existentes.</summary>
+    private void OnConfirmCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnConfirmClick(sender, e);
+
+    /// <summary>Evita confirmar si la vista no tiene un cálculo válido.</summary>
+    private void OnConfirmCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+    {
+        e.CanExecute = ConfirmButton.IsEnabled;
+        e.Handled = true;
+    }
+
+    /// <summary>Reinicia la selección actual sin alterar ventas persistidas.</summary>
+    private void OnCancelCommandExecuted(object sender, ExecutedRoutedEventArgs e) => ResetAssistant();
 
     /// <summary>Busca ventas completadas con el filtro visible.</summary>
     private async void OnSearchClick(object sender, RoutedEventArgs e)
@@ -97,7 +121,7 @@ public partial class DevolucionesView : UserControl
                 _restock[line.OrderDetailId] = true;
             }
 
-            SelectedSaleText.Text = $"Venta ORD-{sale.ShortOrderId} | {sale.CustomerDisplayName} | Total original ${sale.Total:0.00}";
+            SelectedSaleText.Text = $"Venta ORD-{sale.ShortOrderId} | {sale.CustomerDisplayName} | Total original {NumberFormatter.Currency(sale.Total)}";
             RenderLines();
             UpdateSummary();
         }
@@ -195,10 +219,11 @@ public partial class DevolucionesView : UserControl
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
             var description = new TextBlock
             {
-                Text = $"{line.ProductCode} - {line.ProductDescription}\nDisponible: {line.AvailableQuantity:0.###}",
+                Text = $"{line.ProductCode} - {line.ProductDescription}\nDisponible: {NumberFormatter.Quantity(line.AvailableQuantity)}",
                 TextWrapping = TextWrapping.Wrap,
                 VerticalAlignment = VerticalAlignment.Center,
-                FontSize = 16
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = line.ProductDescription
             };
             Grid.SetColumn(description, 0);
             row.Children.Add(description);
@@ -244,11 +269,12 @@ public partial class DevolucionesView : UserControl
         var button = new Button
         {
             Content = text,
-            Width = 90,
-            Height = 90,
-            FontSize = 28,
+            Width = 64,
+            MinHeight = 36,
+            Style = (Style)Application.Current.FindResource("AppActionButtonSecondaryStyle"),
             Margin = new Thickness(2)
         };
+        AutomationProperties.SetName(button, $"Cambiar cantidad {text}");
         button.Click += (_, _) => action();
         return button;
     }
@@ -272,10 +298,10 @@ public partial class DevolucionesView : UserControl
         if (_selectedSale is null || _currentSession.CurrentEmployee is null)
         {
             ConfirmButton.IsEnabled = false;
-            SubtotalText.Text = "Subtotal: $0.00";
-            DiscountText.Text = "Descuento: $0.00";
-            TaxText.Text = "IVA: $0.00";
-            TotalText.Text = "Total crédito: $0.00";
+            SubtotalText.Text = $"Subtotal: {NumberFormatter.Currency(0m)}";
+            DiscountText.Text = $"Descuento: {NumberFormatter.Currency(0m)}";
+            TaxText.Text = $"IVA: {NumberFormatter.Currency(0m)}";
+            TotalText.Text = $"Total crédito: {NumberFormatter.Currency(0m)}";
             FiscalText.Text = string.Empty;
             return;
         }
@@ -287,7 +313,7 @@ public partial class DevolucionesView : UserControl
         if (requests.Length == 0)
         {
             ConfirmButton.IsEnabled = false;
-            TotalText.Text = "Total crédito: $0.00";
+            TotalText.Text = $"Total crédito: {NumberFormatter.Currency(0m)}";
             FiscalText.Text = string.Empty;
             return;
         }
@@ -310,10 +336,10 @@ public partial class DevolucionesView : UserControl
                 ? preview
                 : ReturnCalculator.Calculate(previewRequest with { RefundMethod = refundMethod, RefundAmount = preview.Total }, _selectedSale, _lines.Values.ToArray(), null, _options);
             var fiscal = _fiscalPolicy.Decide(_selectedSale.DteType, calculation.ReturnType);
-            SubtotalText.Text = $"Subtotal: ${calculation.Subtotal:0.00}";
-            DiscountText.Text = $"Descuento: ${calculation.DiscountAmount:0.00}";
-            TaxText.Text = $"IVA: ${calculation.TaxAmount:0.00}";
-            TotalText.Text = $"Total crédito: ${calculation.Total:0.00} ({calculation.ReturnType})";
+            SubtotalText.Text = $"Subtotal: {NumberFormatter.Currency(calculation.Subtotal)}";
+            DiscountText.Text = $"Descuento: {NumberFormatter.Currency(calculation.DiscountAmount)}";
+            TaxText.Text = $"IVA: {NumberFormatter.Currency(calculation.TaxAmount)}";
+            TotalText.Text = $"Total crédito: {NumberFormatter.Currency(calculation.Total)} ({calculation.ReturnType})";
             FiscalText.Text = fiscal.UserMessage;
             ConfirmButton.IsEnabled = _returnService.Capabilities.CanConfirmReturns && calculation.Total > 0m;
             TechnicalMessageText.Text = string.Empty;
@@ -325,7 +351,7 @@ public partial class DevolucionesView : UserControl
         }
     }
 
-    private string QuantityText(Guid lineId) => _quantities.TryGetValue(lineId, out var quantity) ? quantity.ToString("0.###") : "0";
+    private string QuantityText(Guid lineId) => _quantities.TryGetValue(lineId, out var quantity) ? NumberFormatter.Quantity(quantity) : "0";
 
     private void ResetAssistant()
     {

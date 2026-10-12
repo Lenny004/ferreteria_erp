@@ -3,6 +3,7 @@ using System.Windows;
 namespace Ferreteria.PuntoVenta.Views.Caja;
 
 /// <summary>Diálogo para seleccionar un rango local inclusivo.</summary>
+/// <remarks>El foco inicia en Desde; Enter acepta el rango y Escape cancela.</remarks>
 public partial class SalesHistoryRangeDialog : Window
 {
     private readonly DateOnly _defaultDate;

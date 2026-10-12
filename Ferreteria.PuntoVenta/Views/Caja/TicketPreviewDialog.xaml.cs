@@ -3,6 +3,7 @@ using System.Windows;
 namespace Ferreteria.PuntoVenta.Views.Caja;
 
 /// <summary>Muestra el texto plano del ticket con fuente monoespaciada.</summary>
+/// <remarks>El foco inicia en Cerrar; Enter o Escape cierran la vista previa.</remarks>
 public partial class TicketPreviewDialog : Window
 {
     /// <summary>Inicializa la ventana con el contenido generado.</summary>

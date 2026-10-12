@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Ferreteria.PuntoVenta.Models;
 using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Security;
@@ -15,6 +16,7 @@ namespace Ferreteria.PuntoVenta.Views.Caja;
 /// (<c>system.Printers</c>), imprimir una página de prueba y ver una vista previa del ticket.
 /// La lógica de validación vive en <see cref="PrinterConfigurationRules"/>; aquí solo se
 /// leen los controles y se muestran mensajes en español.
+/// Atajos: Ctrl+S guardar, F5 actualizar y Esc cancelar la edición local.
 /// </summary>
 public partial class ImpresorasView : UserControl
 {
@@ -70,6 +72,39 @@ public partial class ImpresorasView : UserControl
             _logger.LogError(ex, "No se pudo cargar la configuración de impresoras.");
             StatusText.Text = "No se pudo cargar la configuración guardada. Puede usar las impresoras de Windows.";
         }
+    }
+
+    /// <summary>Guarda la configuración usando la validación y el flujo existentes.</summary>
+    private void OnSaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnSaveClick(sender, e);
+
+    /// <summary>Actualiza la lista de impresoras configuradas.</summary>
+    private async void OnRefreshCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+    {
+        await ReloadAsync();
+        StatusText.Text = "Lista actualizada.";
+    }
+
+    /// <summary>Revierte la edición local al registro seleccionado, sin persistir cambios.</summary>
+    private void OnCancelCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnCancelClick(sender, e);
+
+    /// <summary>Restaura los campos con la impresora seleccionada o los valores predeterminados.</summary>
+    private void OnCancelClick(object sender, RoutedEventArgs e)
+    {
+        if (PrintersList.SelectedItem is Printer printer)
+        {
+            SelectPrinter(printer.Id);
+        }
+        else
+        {
+            NameTextBox.Text = string.Empty;
+            ConnectionCombo.SelectedIndex = 0;
+            IpTextBox.Text = string.Empty;
+            PortTextBox.Text = DefaultNetworkPort.ToString(CultureInfo.InvariantCulture);
+            PaperCombo.SelectedIndex = 0;
+            UpdateNetworkFields();
+        }
+
+        StatusText.Text = "Edición cancelada.";
     }
 
     private void OnPrinterSelectionChanged(object sender, SelectionChangedEventArgs e)
