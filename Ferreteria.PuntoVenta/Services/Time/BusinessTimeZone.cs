@@ -77,48 +77,51 @@ public sealed class BusinessTimeZone
 
     private static TimeZoneInfo? FindZone(string configuredId)
     {
-        try
+        var directZone = TryFindSystemZone(configuredId);
+        if (directZone is not null)
         {
-            return TimeZoneInfo.FindSystemTimeZoneById(configuredId);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-        }
-        catch (InvalidTimeZoneException)
-        {
+            return directZone;
         }
 
         if (TimeZoneInfo.TryConvertWindowsIdToIanaId(configuredId, out var ianaId)
             && !string.IsNullOrWhiteSpace(ianaId))
         {
-            try
+            var convertedZone = TryFindSystemZone(ianaId);
+            if (convertedZone is not null)
             {
-                return TimeZoneInfo.FindSystemTimeZoneById(ianaId);
-            }
-            catch (TimeZoneNotFoundException)
-            {
-            }
-            catch (InvalidTimeZoneException)
-            {
+                return convertedZone;
             }
         }
 
         if (TimeZoneInfo.TryConvertIanaIdToWindowsId(configuredId, out var windowsId)
             && !string.IsNullOrWhiteSpace(windowsId))
         {
-            try
+            var convertedZone = TryFindSystemZone(windowsId);
+            if (convertedZone is not null)
             {
-                return TimeZoneInfo.FindSystemTimeZoneById(windowsId);
-            }
-            catch (TimeZoneNotFoundException)
-            {
-            }
-            catch (InvalidTimeZoneException)
-            {
+                return convertedZone;
             }
         }
 
         return null;
+    }
+
+    private static TimeZoneInfo? TryFindSystemZone(string zoneId)
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(zoneId);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            // Se prueba el identificador equivalente antes de declarar inválida la configuración.
+            return null;
+        }
+        catch (InvalidTimeZoneException)
+        {
+            // Una zona corrupta tampoco debe impedir probar la representación alternativa.
+            return null;
+        }
     }
 
     private static string? ResolveIanaId(string configuredId)
