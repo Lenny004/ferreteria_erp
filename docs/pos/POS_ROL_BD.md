@@ -19,7 +19,7 @@
 | `dte."DteConfig"`, `dte."DteIssued"`, `dte."DteContingency"` | SELECT, INSERT, UPDATE | Emisión, transmisión y contingencia; `DteService.cs:183`, `DteService.cs:484`, `DteService.cs:497`. |
 | `hr."Departments"`, `hr."Positions"` | SELECT | Referencias de empleados y autorización; `AuthorizationGuard.cs:90`, `EmployeeService.cs:100`. No hay escritura POS en estas tablas. |
 | `hr."Employees"` | SELECT, INSERT, UPDATE | Identidad, permisos y PIN; `AuthorizationGuard.cs:90`, `EmployeeService.cs:74`, `EmployeeService.cs:149`. |
-| `system."Settings"` | SELECT, INSERT, UPDATE | Configuración operativa; `ConfigService.cs`. |
+| `system."Settings"` | SELECT, INSERT, UPDATE | Tabla heredada de parámetros clave/valor; no hay un servicio POS actual que la gestione. Las opciones actuales se cargan desde `Config/appsettings.json`/variables de entorno, el emisor desde `dte.DteConfig` y las impresoras mediante `PrinterConfigService`. |
 | `system."Printers"` | SELECT, INSERT, UPDATE | Configuración de impresión; `PrinterConfigService.cs:52`, `PrinterConfigService.cs:111`. |
 | `system."AuditLog"` | SELECT, INSERT | Auditoría append-only y lockout; `AuditService.cs:73`, `AuditService.cs:97`, `PinAttemptService.cs:94`, `CashSessionService.cs:264`. No hay UPDATE. |
 

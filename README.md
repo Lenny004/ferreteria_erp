@@ -607,7 +607,7 @@ Ferreteria/
 | DTE | `DTEService` | 🔲 Vacío | 4 |
 | Impresión | `ReceiptPrintService`, `SaleReceiptPrinter` | Implementado (sin prueba con impresora física) | 5 |
 | Corte de caja | `CashSessionService`, `CorteCajaView` | Implementado con pruebas unitarias y de integración (Testcontainers); impresión física pendiente de probar | 6 |
-| Configuración | `ConfigService` | Parcial | — |
+| Configuración | `App.xaml.cs`, clases `*Options`, `PrinterConfigService` | Parcial; opciones en `Config/appsettings.json`/variables de entorno, emisor en `dte.DteConfig` e impresoras en `system.Printers` | — |
 
 **Modelos WPF (`Models/`):** dominio de caja — `Sales`, `Dte`, `Public` (catálogo/stock), `Hr.Employee` (PIN y permisos). **No** incluir `WebUser`, planilla ni CRUD RRHH en WPF.
 

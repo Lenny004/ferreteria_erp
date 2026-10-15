@@ -93,9 +93,12 @@ public sealed class MhApiClient : IMhApiClient, IDisposable
 
             if (parsed?.Body?.Token is not { Length: > 0 } token)
             {
-                _logger.LogError("Autenticacion MH fallida ({Status}).", (int)response.StatusCode);
+                _logger.LogError(
+                    "Autenticación MH fallida. Estado HTTP {Status}; longitud de respuesta {ResponseLength}.",
+                    (int)response.StatusCode,
+                    body.Length);
                 throw new DteTransmissionException(
-                    $"Autenticacion MH fallida: {parsed?.Message ?? parsed?.Error ?? response.StatusCode.ToString()}");
+                    $"Autenticación MH fallida. Código HTTP: {(int)response.StatusCode}.");
             }
 
             _cachedToken = token.StartsWith("Bearer", StringComparison.OrdinalIgnoreCase)
@@ -146,20 +149,33 @@ public sealed class MhApiClient : IMhApiClient, IDisposable
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
             _cachedToken = null;
+            _logger.LogError(
+                "El MH rechazó la autorización. Estado HTTP {Status}; longitud de respuesta {ResponseLength}.",
+                (int)response.StatusCode,
+                body.Length);
             throw new DteTransmissionException(
-                "El MH rechazo la autorizacion; se reintentara con un nuevo token.");
+                $"El MH rechazó la autorización. Código HTTP: {(int)response.StatusCode}; se reintentará con un nuevo token.");
         }
 
         if ((int)response.StatusCode >= 500)
         {
+            _logger.LogError(
+                "El MH respondió con error de servidor. Estado HTTP {Status}; longitud de respuesta {ResponseLength}.",
+                (int)response.StatusCode,
+                body.Length);
             throw new DteTransmissionException(
-                $"El MH respondio con error de servidor {(int)response.StatusCode}.");
+                $"El MH respondió con error de servidor. Código HTTP: {(int)response.StatusCode}.");
         }
 
         var parsed = JsonConvert.DeserializeObject<MhReceptionResponse>(body);
         if (parsed is null)
         {
-            throw new DteTransmissionException("Respuesta ilegible del servicio de recepcion del MH.");
+            _logger.LogError(
+                "Respuesta ilegible del MH. Estado HTTP {Status}; longitud de respuesta {ResponseLength}.",
+                (int)response.StatusCode,
+                body.Length);
+            throw new DteTransmissionException(
+                $"Respuesta ilegible del servicio de recepción del MH. Código HTTP: {(int)response.StatusCode}.");
         }
 
         return parsed;
