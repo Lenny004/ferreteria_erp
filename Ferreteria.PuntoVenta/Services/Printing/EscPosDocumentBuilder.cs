@@ -9,6 +9,14 @@ namespace Ferreteria.PuntoVenta.Services.Printing;
 /// </summary>
 internal sealed class EscPosDocumentBuilder
 {
+    private const int NarrowPaperWidthMillimeters = 58;
+    private const int NarrowPaperColumns = 32;
+    private const int WidePaperColumns = 48;
+    private const byte Windows1252CodeTable = 16;
+    private const byte DefaultQrModuleSize = 6;
+    private const byte MaximumFeedLines = byte.MaxValue;
+    private const byte CutFeedUnits = 80;
+
     private readonly List<byte> _buffer = new();
     private readonly List<string> _plainLines = new();
     private readonly Encoding _encoding;
@@ -20,12 +28,14 @@ internal sealed class EscPosDocumentBuilder
     /// <param name="paperWidthMm">Ancho de papel en milímetros (80 o 58).</param>
     public EscPosDocumentBuilder(int paperWidthMm)
     {
-        _columns = paperWidthMm <= 58 ? 32 : 48;
+        _columns = paperWidthMm <= NarrowPaperWidthMillimeters
+            ? NarrowPaperColumns
+            : WidePaperColumns;
         _encoding = ResolveEncoding();
 
         // Inicializa y fija la tabla de códigos WPC1252 (índice 16) para acentos y símbolo $.
         _buffer.AddRange(EscPosCommands.Initialize);
-        _buffer.AddRange(EscPosCommands.SelectCharacterCodeTable(16));
+        _buffer.AddRange(EscPosCommands.SelectCharacterCodeTable(Windows1252CodeTable));
     }
 
     /// <summary>Cantidad de columnas de texto disponibles para el ancho actual.</summary>
@@ -181,7 +191,7 @@ internal sealed class EscPosDocumentBuilder
     /// <param name="data">Texto o URL a codificar.</param>
     /// <param name="moduleSize">Tamaño de módulo (1-16).</param>
     /// <returns>El propio constructor para encadenar llamadas.</returns>
-    public EscPosDocumentBuilder AppendQr(string data, byte moduleSize = 6)
+    public EscPosDocumentBuilder AppendQr(string data, byte moduleSize = DefaultQrModuleSize)
     {
         _buffer.AddRange(EscPosCommands.AlignCenter);
         _buffer.AddRange(EscPosCommands.BuildQr(data, moduleSize));
@@ -198,7 +208,9 @@ internal sealed class EscPosDocumentBuilder
     /// <returns>El propio constructor para encadenar llamadas.</returns>
     public EscPosDocumentBuilder Feed(int lines = 1)
     {
-        byte safeLines = lines < 0 ? (byte)0 : (lines > 255 ? (byte)255 : (byte)lines);
+        byte safeLines = lines < 0
+            ? (byte)0
+            : (lines > MaximumFeedLines ? MaximumFeedLines : (byte)lines);
         _buffer.AddRange(EscPosCommands.FeedLines(safeLines));
         return this;
     }
@@ -209,7 +221,7 @@ internal sealed class EscPosDocumentBuilder
     /// <returns>El propio constructor para encadenar llamadas.</returns>
     public EscPosDocumentBuilder Cut()
     {
-        _buffer.AddRange(EscPosCommands.PartialCutWithFeed(80));
+        _buffer.AddRange(EscPosCommands.PartialCutWithFeed(CutFeedUnits));
         _plainLines.Add("[CORTE]");
         return this;
     }

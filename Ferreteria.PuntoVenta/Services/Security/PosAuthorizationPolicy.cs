@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Ferreteria.PuntoVenta.Models;
 
 namespace Ferreteria.PuntoVenta.Services.Security;
@@ -56,7 +57,7 @@ public static class PosAuthorizationPolicy
     {
         var permissions = Enum.GetValues<PosPermission>()
             .Where(permission => IsAllowed(employee, permission, administrationPositions))
-            .ToHashSet();
+            .ToFrozenSet();
         return permissions;
     }
 }
