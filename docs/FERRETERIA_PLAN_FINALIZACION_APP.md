@@ -92,7 +92,7 @@ Conclusion: no faltan muchas vistas WPF base; falta la capa de aplicacion, servi
 | DTE | `Services/DTEService.cs` | Vacio | Critica |
 | Inventario | `Services/InventarioService.cs` | Vacio | Critica |
 | Impresion | `Services/ImpresionService.cs` | Vacio | Alta |
-| Configuracion | `Services/ConfigService.cs` | Existe | Media |
+| Configuracion | `App.xaml.cs`, clases `*Options`, `PrinterConfigService` | Parcial; opciones en `Config/appsettings.json`/variables de entorno, emisor en `dte.DteConfig` e impresoras en `system.Printers` | Media |
 | PIN | No existe como servicio dedicado | Logica en UI hardcoded | Critica |
 | Ordenes/Ventas | No existe | Necesario | Critica |
 | Corte caja | No existe | Necesario | Alta |
