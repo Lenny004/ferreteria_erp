@@ -21,6 +21,8 @@ namespace Ferreteria.PuntoVenta.Views.Caja;
 /// </summary>
 public partial class FacturacionView : UserControl
 {
+    private const int SearchResultLimit = 25;
+
     /// <summary>Comando POS F2 para enfocar la búsqueda de producto.</summary>
     public static readonly RoutedCommand FocusProductSearchCommand = new();
 
@@ -64,13 +66,14 @@ public partial class FacturacionView : UserControl
         ILogger<FacturacionView> logger,
         CashSessionOpeningFlow cashSessionOpeningFlow)
     {
-        _inventoryService = inventoryService;
-        _orderService = orderService;
-        _customerService = customerService;
-        _currentSession = currentSession;
-        _saleReceiptPrinter = saleReceiptPrinter;
+        _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
+        _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
+        _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
+        _currentSession = currentSession ?? throw new ArgumentNullException(nameof(currentSession));
+        _saleReceiptPrinter = saleReceiptPrinter ?? throw new ArgumentNullException(nameof(saleReceiptPrinter));
+        ArgumentNullException.ThrowIfNull(printingOptions);
         _printingOptions = printingOptions.Value;
-        _logger = logger;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _cashSessionOpeningFlow = cashSessionOpeningFlow ?? throw new ArgumentNullException(nameof(cashSessionOpeningFlow));
 
         InitializeComponent();
@@ -110,12 +113,13 @@ public partial class FacturacionView : UserControl
             ProductResultsListBox.ItemsSource = await _inventoryService.SearchProductsAsync(
                 ProductSearchTextBox.Text,
                 stockStatus: null,
-                take: 25,
+                take: SearchResultLimit,
                 cancellationToken: cancellationToken);
             ProductResultsListBox.Visibility = Visibility.Visible;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            return;
         }
         catch (Exception ex)
         {
@@ -163,12 +167,13 @@ public partial class FacturacionView : UserControl
             CustomerResultsListBox.ItemsSource = await _customerService.GetCustomersAsync(
                 searchText,
                 includeInactive: false,
-                take: 25,
+                take: SearchResultLimit,
                 cancellationToken: cancellationToken);
             CustomerResultsListBox.Visibility = Visibility.Visible;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            return;
         }
         catch (Exception exception)
         {
@@ -285,7 +290,11 @@ public partial class FacturacionView : UserControl
             return;
         }
 
-        var quantityResult = DecimalInputParser.Parse(QuantityTextBox.Text, precision: 12, scale: 3, allowNegative: false);
+        var quantityResult = DecimalInputParser.Parse(
+            QuantityTextBox.Text,
+            precision: FieldConstraints.OrderDetailQuantityPrecision,
+            scale: FieldConstraints.OrderDetailQuantityScale,
+            allowNegative: false);
         if (!quantityResult.IsValid)
         {
             SetStatusMessage(quantityResult.ErrorMessage!, isError: true);

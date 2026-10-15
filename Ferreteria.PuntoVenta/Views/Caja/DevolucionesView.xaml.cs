@@ -92,8 +92,9 @@ public partial class DevolucionesView : UserControl
             SalesList.ItemsSource = results;
             TechnicalMessageText.Text = results.Count == 0 ? "No se encontraron ventas disponibles." : string.Empty;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            _logger.LogError(exception, "No se pudo buscar ventas disponibles para devolución");
             TechnicalMessageText.Text = "No se pudo buscar la venta. Revise la conexión e intente de nuevo.";
         }
     }
@@ -125,8 +126,9 @@ public partial class DevolucionesView : UserControl
             RenderLines();
             UpdateSummary();
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            _logger.LogError(exception, "No se pudieron cargar las líneas de la venta {OrderId}", sale.OrderId);
             TechnicalMessageText.Text = "No se pudieron cargar las líneas de la venta.";
         }
     }
@@ -154,7 +156,7 @@ public partial class DevolucionesView : UserControl
         try
         {
             var requestLines = _quantities.Where(item => item.Value > 0m).Select(item => new ReturnLineRequest(item.Key, item.Value, _restock.GetValueOrDefault(item.Key, true))).ToArray();
-            var method = RefundCombo.SelectedItem?.ToString() ?? ReturnDomainConstants.RefundMethods.None;
+            var refundMethod = RefundCombo.SelectedItem?.ToString() ?? ReturnDomainConstants.RefundMethods.None;
             var authorizationDialog = new ReturnAuthorizationDialog { Owner = Window.GetWindow(this) };
             if (authorizationDialog.ShowDialog() != true)
             {
@@ -164,7 +166,7 @@ public partial class DevolucionesView : UserControl
             _pendingClientRequestId ??= Guid.NewGuid();
             var previewRequest = new ReturnRequest(_pendingClientRequestId.Value, _selectedSale.OrderId, _currentSession.CurrentEmployee.Id, Guid.Empty, ReasonCombo.SelectedValue?.ToString() ?? string.Empty, NotesBox.Text, ReturnDomainConstants.RefundMethods.None, requestLines, 0m);
             var preview = ReturnCalculator.Calculate(previewRequest, _selectedSale, _lines.Values.ToArray(), null, _options);
-            var request = previewRequest with { RefundMethod = method, RefundAmount = method.Equals(ReturnDomainConstants.RefundMethods.None, StringComparison.OrdinalIgnoreCase) ? 0m : preview.Total };
+            var request = previewRequest with { RefundMethod = refundMethod, RefundAmount = refundMethod.Equals(ReturnDomainConstants.RefundMethods.None, StringComparison.OrdinalIgnoreCase) ? 0m : preview.Total };
             var result = await _returnService.CreateReturnAsync(request, authorizationDialog.AuthorizerPin);
             var receipt = ReturnReceiptComposer.Compose(
                 new ReturnReceiptData(
@@ -288,7 +290,10 @@ public partial class DevolucionesView : UserControl
 
         var current = _quantities[lineId];
         var next = Math.Clamp(current + delta, 0m, line.AvailableQuantity);
-        _quantities[lineId] = Math.Round(next, 3, MidpointRounding.AwayFromZero);
+        _quantities[lineId] = Math.Round(
+            next,
+            FieldConstraints.OrderDetailQuantityScale,
+            MidpointRounding.AwayFromZero);
         RenderLines();
         UpdateSummary();
     }
