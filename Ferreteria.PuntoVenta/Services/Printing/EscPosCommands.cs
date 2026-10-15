@@ -8,6 +8,10 @@ internal static class EscPosCommands
 {
     private const byte Esc = 0x1B;
     private const byte Gs = 0x1D;
+    private const byte DefaultQrModuleSize = 6;
+    private const byte MinimumQrModuleSize = 1;
+    private const byte MaximumQrModuleSize = 16;
+    private const char DefaultQrErrorCorrection = 'M';
 
     /// <summary>Salto de línea (LF).</summary>
     public const byte LineFeed = 0x0A;
@@ -88,7 +92,10 @@ internal static class EscPosCommands
     /// </param>
     /// <returns>Bytes que seleccionan modelo, tamaño, corrección, almacenan e imprimen el QR.</returns>
     /// <exception cref="ArgumentException">Si <paramref name="data"/> es nulo o vacío.</exception>
-    public static byte[] BuildQr(string data, byte moduleSize = 6, char errorCorrection = 'M')
+    public static byte[] BuildQr(
+        string data,
+        byte moduleSize = DefaultQrModuleSize,
+        char errorCorrection = DefaultQrErrorCorrection)
     {
         if (string.IsNullOrEmpty(data))
         {
@@ -107,7 +114,9 @@ internal static class EscPosCommands
             _ => 0x31
         };
 
-        byte clampedModule = moduleSize < 1 ? (byte)1 : (moduleSize > 16 ? (byte)16 : moduleSize);
+        byte clampedModule = moduleSize < MinimumQrModuleSize
+            ? MinimumQrModuleSize
+            : (moduleSize > MaximumQrModuleSize ? MaximumQrModuleSize : moduleSize);
 
         // 1) Seleccionar modelo 2: GS ( k pL pH cn fn n1 n2
         //    pL pH = 4 0 ; cn = 49 (0x31) ; fn = 65 (0x41) ; n1 = 50 (modelo 2) ; n2 = 0

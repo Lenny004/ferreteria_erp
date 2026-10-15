@@ -93,7 +93,7 @@ public sealed class MhApiClient : IMhApiClient, IDisposable
 
             if (parsed?.Body?.Token is not { Length: > 0 } token)
             {
-                _logger.LogError("Autenticacion MH fallida ({Status}): {Body}", (int)response.StatusCode, body);
+                _logger.LogError("Autenticacion MH fallida ({Status}).", (int)response.StatusCode);
                 throw new DteTransmissionException(
                     $"Autenticacion MH fallida: {parsed?.Message ?? parsed?.Error ?? response.StatusCode.ToString()}");
             }
