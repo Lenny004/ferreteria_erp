@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -31,7 +32,7 @@ public partial class MainShellWindow : Window
     private readonly IServiceProvider _serviceProvider;
     private readonly CashSessionOpeningFlow _cashSessionOpeningFlow;
     private readonly IAuthorizationGuard _authorizationGuard;
-    private IReadOnlySet<PosPermission> _grantedPermissions = new HashSet<PosPermission>();
+    private IReadOnlySet<PosPermission> _grantedPermissions = FrozenSet<PosPermission>.Empty;
     private readonly DispatcherTimer _connectivityTimer;
 
     /// <summary>
@@ -45,10 +46,10 @@ public partial class MainShellWindow : Window
         CashSessionOpeningFlow cashSessionOpeningFlow,
         IAuthorizationGuard authorizationGuard)
     {
-        _connectivityService = connectivityService;
-        _currentSession = currentSession;
-        _auditService = auditService;
-        _serviceProvider = serviceProvider;
+        _connectivityService = connectivityService ?? throw new ArgumentNullException(nameof(connectivityService));
+        _currentSession = currentSession ?? throw new ArgumentNullException(nameof(currentSession));
+        _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _cashSessionOpeningFlow = cashSessionOpeningFlow ?? throw new ArgumentNullException(nameof(cashSessionOpeningFlow));
         _authorizationGuard = authorizationGuard ?? throw new ArgumentNullException(nameof(authorizationGuard));
 
@@ -232,10 +233,6 @@ public partial class MainShellWindow : Window
 
         return int.TryParse(parameter?.ToString(), out index);
     }
-
-    /// <summary>Devuelve las secciones permitidas en el mismo orden del menú.</summary>
-    private List<(Button Button, string Title, Func<UserControl> CreateView)> GetVisibleSections() =>
-        _sections.Values.Where(section => section.Button.Visibility == Visibility.Visible).ToList();
 
     /// <summary>Obtiene las claves visibles en el mismo orden usado por los atajos.</summary>
     private List<string> GetVisibleSectionKeys() =>

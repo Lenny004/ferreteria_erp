@@ -7,6 +7,8 @@ using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Views.Inicio;
 using Ferreteria.PuntoVenta.Views.Shell;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ferreteria.PuntoVenta.Views.PIN;
 
@@ -27,6 +29,7 @@ public partial class PinWindow : Window
     private readonly ICurrentSessionService _currentSession;
     private readonly IAuditService _auditService;
     private readonly IPinAttemptService _pinAttemptService;
+    private readonly ILogger<PinWindow> _logger;
     private readonly OperationalModule _module;
     private readonly string _initialSection;
     private string _pinIngresado = string.Empty;
@@ -42,6 +45,7 @@ public partial class PinWindow : Window
     /// <param name="pinAttemptService">Servicio persistente que controla los intentos y el bloqueo.</param>
     /// <param name="module">Módulo operativo al que se intenta entrar.</param>
     /// <param name="initialSection">Sección inicial del shell tras login (opcional).</param>
+    /// <param name="logger">Logger para registrar fallos sin exponer detalles técnicos en la UI.</param>
     public PinWindow(
         PinAuthService pinAuth,
         IServiceProvider services,
@@ -49,13 +53,15 @@ public partial class PinWindow : Window
         IAuditService auditService,
         IPinAttemptService pinAttemptService,
         OperationalModule module,
-        string initialSection = "")
+        string initialSection = "",
+        ILogger<PinWindow>? logger = null)
     {
-        _pinAuth = pinAuth;
-        _services = services;
-        _currentSession = currentSession;
-        _auditService = auditService;
-        _pinAttemptService = pinAttemptService;
+        _pinAuth = pinAuth ?? throw new ArgumentNullException(nameof(pinAuth));
+        _services = services ?? throw new ArgumentNullException(nameof(services));
+        _currentSession = currentSession ?? throw new ArgumentNullException(nameof(currentSession));
+        _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+        _pinAttemptService = pinAttemptService ?? throw new ArgumentNullException(nameof(pinAttemptService));
+        _logger = logger ?? NullLogger<PinWindow>.Instance;
         _module = module;
         _initialSection = string.IsNullOrWhiteSpace(initialSection)
             ? NavSections.DefaultSection(module)
@@ -161,7 +167,8 @@ public partial class PinWindow : Window
 
         OcultarError();
 
-        if (_pinIngresado.Length >= PinLength || string.IsNullOrEmpty(digito))
+        if (digito.Length != 1 || digito[0] is < '0' or > '9'
+            || _pinIngresado.Length >= PinLength)
         {
             return;
         }
@@ -201,18 +208,18 @@ public partial class PinWindow : Window
         if (_validando)
             return;
 
-        if (await MostrarBloqueoSiAplicaAsync())
-            return;
-
-        if (_pinIngresado.Length < PinLength)
-        {
-            MostrarError("Ingresa los 4 digitos completos.");
-            return;
-        }
-
         _validando = true;
         try
         {
+            if (await MostrarBloqueoSiAplicaAsync())
+                return;
+
+            if (_pinIngresado.Length < PinLength)
+            {
+                MostrarError("Ingresa los 4 dígitos completos.");
+                return;
+            }
+
             var employee = await _pinAuth.ValidatePinAsync(_pinIngresado, _module);
             if (employee is null)
             {
@@ -233,8 +240,8 @@ public partial class PinWindow : Window
         }
         catch (Exception ex)
         {
-            // No incluir el PIN en el mensaje: solo el error técnico.
-            MostrarError($"Error al validar PIN: {ex.Message}");
+            _logger.LogError(ex, "Error al validar el PIN para el módulo {Module}", _module);
+            MostrarError("No fue posible validar el PIN. Inténtalo de nuevo.");
             LimpiarPin();
         }
         finally
