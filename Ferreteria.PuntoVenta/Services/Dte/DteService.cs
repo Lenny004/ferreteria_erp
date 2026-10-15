@@ -464,8 +464,9 @@ public sealed class DteService : IDteService
             {
                 dte.MhStatus = DteConstants.EstadosMh.Rechazado;
                 _logger.LogWarning(
-                    "DTE {Control} rechazado por el MH: {Msg}",
+                    "DTE {Control} rechazado por el MH. Código {MessageCode}: {Description}",
                     dte.ControlNumber,
+                    response.CodigoMsg,
                     response.DescripcionMsg);
             }
 
