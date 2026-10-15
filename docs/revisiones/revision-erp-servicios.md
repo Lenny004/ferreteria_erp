@@ -26,8 +26,8 @@ No se identificaron hallazgos Críticos. Se aplicaron únicamente refactors segu
 
 ### Importante — Parámetro privado sin uso y clase muerta
 
-- Ubicación: parámetro `dbContext` de `OrderService.AddSaleLineAsync` y `Ferreteria.PuntoVenta/Services/ConfigService.cs`
-- Problema: el parámetro no participaba en ninguna operación y la clase `ConfigService` era un marcador vacío sin referencias ni registro de DI. Ambos elementos agregaban superficie mental sin comportamiento.
+- Ubicación: parámetro `dbContext` de `OrderService.AddSaleLineAsync` y el antiguo servicio genérico de configuración.
+- Problema: el parámetro no participaba en ninguna operación y el servicio genérico de configuración era un marcador vacío sin referencias ni registro de DI. La configuración actual se carga mediante `App.xaml.cs` y clases `*Options`; el emisor y las impresoras se gestionan en `dte.DteConfig` y `PrinterConfigService`.
 - Propuesta: quitar el parámetro privado y eliminar la clase sin referencias. APLICADO.
 
 ### Importante — Auditoría que falla sin informar al llamador
@@ -96,7 +96,7 @@ No se identificaron hallazgos Críticos. Se aplicaron únicamente refactors segu
 | Respuestas externas completas en logs | APLICADO | Se registran solo códigos de estado; se evita exponer cuerpos de respuesta. |
 | Capturas vacías de zona horaria | APLICADO | Se extrajo `TryFindSystemZone` con excepciones esperadas y comentarios de fallback. |
 | Valores ESC/POS sin nombre | APLICADO | Se agregaron constantes privadas sin alterar los valores emitidos. |
-| Parámetro privado sin uso y clase muerta | APLICADO | Se quitó el parámetro y se eliminó `ConfigService.cs`, que no tenía referencias. |
+| Parámetro privado sin uso y clase muerta | APLICADO | Se quitó el parámetro y se eliminó el servicio genérico de configuración, que no tenía referencias; la configuración vigente quedó en `App.xaml.cs`, las clases `*Options`, `dte.DteConfig` y `PrinterConfigService`. |
 | Auditoría que falla sin informar | DIFERIDO | Requiere decidir la política de consistencia y puede cambiar el resultado de operaciones existentes. |
 | Fallos de conectividad sin telemetría | DIFERIDO | Requiere una nueva dependencia de logger y pruebas del contrato del servicio. |
 | Reproceso DTE con fallos parciales | DIFERIDO | Requiere cambiar el contrato de resultado o la política de propagación. |

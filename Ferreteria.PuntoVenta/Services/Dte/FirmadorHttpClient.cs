@@ -96,15 +96,19 @@ public sealed class FirmadorHttpClient : IDteSigningService, IDisposable
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError("Firmador respondio con estado HTTP {Status}.", (int)response.StatusCode);
+            _logger.LogError(
+                "Firmador respondió con estado HTTP {Status}; longitud de respuesta {ResponseLength}.",
+                (int)response.StatusCode,
+                body.Length);
             throw new DteSigningException(
-                $"El firmador respondio con error HTTP {(int)response.StatusCode}.");
+                $"El firmador respondió con error HTTP {(int)response.StatusCode}.");
         }
 
         var parsed = JsonConvert.DeserializeObject<FirmadorResponse>(body)
-            ?? throw new DteSigningException("Respuesta vacia del firmador.");
+            ?? throw new DteSigningException(
+                $"El firmador devolvió una respuesta inválida. Código HTTP: {(int)response.StatusCode}.");
 
-        return parsed.GetSignedDocument();
+        return parsed.GetSignedDocument(response.StatusCode);
     }
 
     /// <summary>Libera el HttpClient interno.</summary>
