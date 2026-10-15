@@ -127,7 +127,6 @@ public sealed class OrderService : IOrderService
         foreach (var line in request.Lines)
         {
             await AddSaleLineAsync(
-                dbContext,
                 order,
                 line,
                 products,
@@ -594,7 +593,6 @@ public sealed class OrderService : IOrderService
     }
 
     private static async Task AddSaleLineAsync(
-        FerreteriaDbContext dbContext,
         Order order,
         CashSaleLineRequest line,
         IReadOnlyDictionary<Guid, Product> products,
