@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using Ferreteria.PuntoVenta.Data;
 using Ferreteria.PuntoVenta.Services;
 using Microsoft.EntityFrameworkCore;
@@ -40,24 +42,24 @@ public sealed class AuthorizationGuard : IAuthorizationGuard
         var sessionEmployeeId = _currentSession.CurrentEmployee?.Id;
         if (sessionEmployeeId is null)
         {
-            return Reject(permission, null, "sin sesión");
+            Reject(permission, null, "sin sesión");
         }
 
         if (actingEmployeeId is not null && actingEmployeeId != sessionEmployeeId)
         {
-            return Reject(permission, sessionEmployeeId, "identificador actuante no coincide");
+            Reject(permission, sessionEmployeeId, "identificador actuante no coincide");
         }
 
         var employee = await LoadCurrentEmployeeAsync(sessionEmployeeId.Value, cancellationToken);
         if (employee is null)
         {
-            return Reject(permission, sessionEmployeeId, "empleado inexistente");
+            Reject(permission, sessionEmployeeId, "empleado inexistente");
         }
 
         var snapshot = PosAuthorizationPolicy.Snapshot(employee);
         if (!PosAuthorizationPolicy.IsAllowed(snapshot, permission, _options.PuestosAdministracion))
         {
-            return Reject(permission, snapshot.Id, "permiso insuficiente o empleado inactivo");
+            Reject(permission, snapshot.Id, "permiso insuficiente o empleado inactivo");
         }
 
         return snapshot;
@@ -69,13 +71,13 @@ public sealed class AuthorizationGuard : IAuthorizationGuard
         var sessionEmployeeId = _currentSession.CurrentEmployee?.Id;
         if (sessionEmployeeId is null)
         {
-            return new HashSet<PosPermission>();
+            return FrozenSet<PosPermission>.Empty;
         }
 
         var employee = await LoadCurrentEmployeeAsync(sessionEmployeeId.Value, cancellationToken);
         if (employee is null)
         {
-            return new HashSet<PosPermission>();
+            return FrozenSet<PosPermission>.Empty;
         }
 
         return PosAuthorizationPolicy.GetGrantedPermissions(
@@ -92,7 +94,8 @@ public sealed class AuthorizationGuard : IAuthorizationGuard
             .SingleOrDefaultAsync(employee => employee.Id == employeeId, cancellationToken);
     }
 
-    private AuthorizedEmployee Reject(PosPermission permission, Guid? employeeId, string reason)
+    [DoesNotReturn]
+    private void Reject(PosPermission permission, Guid? employeeId, string reason)
     {
         _logger.LogWarning(
             "Operación POS rechazada. Permiso: {Permission}; Empleado: {EmployeeId}; Motivo: {Reason}",
