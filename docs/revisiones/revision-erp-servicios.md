@@ -6,11 +6,11 @@ No se identificaron hallazgos Críticos. Se aplicaron únicamente refactors segu
 
 ## Hallazgos
 
-### Importante — Respuestas externas completas en logs
+### Importante — Cuerpos HTTP externos completos en logs
 
 - Ubicación: `Ferreteria.PuntoVenta/Services/Dte/MhApiClient.cs:96` y `Ferreteria.PuntoVenta/Services/Dte/FirmadorHttpClient.cs:99`
-- Problema: se registraba el cuerpo completo de respuestas HTTP del Ministerio de Hacienda y del Firmador. Esas respuestas pueden incluir datos del documento, mensajes internos o información sensible; además, el log no necesita el cuerpo para diagnosticar el estado HTTP.
-- Propuesta: registrar únicamente el código de estado y conservar el mensaje controlado que se muestra al usuario. APLICADO.
+- Problema: se registraba el cuerpo completo de respuestas HTTP del Ministerio de Hacienda y del Firmador. Esas respuestas pueden incluir datos del documento, mensajes internos o información sensible; además, el log no necesita el cuerpo para diagnosticar el estado HTTP. El mensaje funcional `DescripcionMsg` de un rechazo del MH es una excepción deliberada: no es secreto y se conserva para diagnóstico junto con `CodigoMsg`.
+- Propuesta: excluir los cuerpos HTTP crudos de los logs y conservar los datos funcionales controlados que sean necesarios para diagnosticar el resultado. APLICADO.
 
 ### Importante — Capturas vacías durante la resolución de zona horaria
 
@@ -93,7 +93,7 @@ No se identificaron hallazgos Críticos. Se aplicaron únicamente refactors segu
 
 | Hallazgo | Estado | Motivo |
 |---|---|---|
-| Respuestas externas completas en logs | APLICADO | Se registran solo códigos de estado; se evita exponer cuerpos de respuesta. |
+| Cuerpos HTTP externos completos en logs | APLICADO | Se excluyen los cuerpos HTTP crudos; los rechazos del MH registran `CodigoMsg` y `DescripcionMsg` porque el mensaje funcional fue autorizado para diagnóstico. |
 | Capturas vacías de zona horaria | APLICADO | Se extrajo `TryFindSystemZone` con excepciones esperadas y comentarios de fallback. |
 | Valores ESC/POS sin nombre | APLICADO | Se agregaron constantes privadas sin alterar los valores emitidos. |
 | Parámetro privado sin uso y clase muerta | APLICADO | Se quitó el parámetro y se eliminó el servicio genérico de configuración, que no tenía referencias; la configuración vigente quedó en `App.xaml.cs`, las clases `*Options`, `dte.DteConfig` y `PrinterConfigService`. |

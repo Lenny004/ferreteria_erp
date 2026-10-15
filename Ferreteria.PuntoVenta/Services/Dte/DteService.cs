@@ -464,10 +464,10 @@ public sealed class DteService : IDteService
             {
                 dte.MhStatus = DteConstants.EstadosMh.Rechazado;
                 _logger.LogWarning(
-                    "DTE {Control} rechazado por el MH. Código funcional {MessageCode}; longitud del detalle {DetailLength}.",
+                    "DTE {Control} rechazado por el MH. Código {MessageCode}: {Description}",
                     dte.ControlNumber,
                     response.CodigoMsg,
-                    response.DescripcionMsg?.Length ?? 0);
+                    response.DescripcionMsg);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
