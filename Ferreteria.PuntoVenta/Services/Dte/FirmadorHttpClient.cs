@@ -96,7 +96,7 @@ public sealed class FirmadorHttpClient : IDteSigningService, IDisposable
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError("Firmador respondio {Status}: {Body}", (int)response.StatusCode, body);
+            _logger.LogError("Firmador respondio con estado HTTP {Status}.", (int)response.StatusCode);
             throw new DteSigningException(
                 $"El firmador respondio con error HTTP {(int)response.StatusCode}.");
         }
