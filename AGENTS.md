@@ -31,6 +31,8 @@ El repositorio incluye dos skills obligatorias que **todo agente debe seguir** a
 
 **Ubicación:** `.cursor/skills/documentacion-codigo/SKILL.md`
 
+- **Revisión de código junior:** [`.cursor/skills/revision-codigo-junior/SKILL.md`](.cursor/skills/revision-codigo-junior/SKILL.md) — guía para revisar legibilidad y mantenibilidad (úsala en revisiones y refactors).
+
 **Descripción:** Estándar oficial de XML documentation comments de C# adaptado al contexto de Ferreteria.PuntoVenta.
 
 **Cuándo invocar:**
