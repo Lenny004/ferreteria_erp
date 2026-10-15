@@ -1,3 +1,4 @@
+using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -173,12 +174,16 @@ public sealed class FirmadorResponse
         Body is { Type: JTokenType.String };
 
     /// <summary>Devuelve el documento firmado si la respuesta fue exitosa.</summary>
-    public string GetSignedDocument()
+    /// <param name="httpStatusCode">Código HTTP recibido del firmador.</param>
+    /// <returns>El documento firmado en formato JWS.</returns>
+    /// <exception cref="DteSigningException">Si la respuesta no contiene un documento firmado.</exception>
+    public string GetSignedDocument(HttpStatusCode httpStatusCode = HttpStatusCode.OK)
     {
         if (!IsSuccess)
         {
             throw new DteSigningException(
-                $"El firmador no devolvio un documento firmado. Estado: {Status}. Detalle: {Body}");
+                $"El firmador no devolvió un documento firmado. Código HTTP: {(int)httpStatusCode}. " +
+                $"Estado del firmador: {Status ?? "desconocido"}.");
         }
 
         return Body!.Value<string>() ?? string.Empty;
