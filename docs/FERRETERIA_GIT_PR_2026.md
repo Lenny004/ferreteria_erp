@@ -22,14 +22,14 @@
 
 ## Cuándo commitear y hacer push
 
-**Práctica del equipo:** al terminar una tarea lógica (feature, fix, doc, migración, etc.), crear **un commit** y **un push** al remoto. No acumular muchos cambios sin subir.
+**Práctica del equipo:** agrupar cambios relacionados en commits lógicos. Al completar un conjunto coherente de cambios (feature, fix, doc, migración, etc.), crear **un commit** y **un push** al remoto.
 
 | Momento | Acción |
 |---------|--------|
-| Terminaste una tarea acotada | `git add` → `git commit` → `git push` |
-| Archivos nuevos o bloque grande de código | Commit + push a la rama actual (no acumular solo en local) |
+| Terminaste una tarea lógica acotada | `git add` → `git commit` → `git push` |
+| Cambios relacionados listos para integrar | Agrupar en un commit lógico; no fragmentar en múltiples commits por cada paso |
 | Cambio solo local / experimental | Puedes pedir al agente que **no** suba hasta que esté listo |
-| Trabajo con agente (Cursor) | El agente **debe** commit + push de forma frecuente (regla `.cursor/rules/commit-push-frecuente.mdc`); di *"no subas"* si no quieres |
+| Trabajo con agente (Cursor) | Agrupar cambios en commits lógicos; sin commit/push por cada paso |
 | No está claro si commitear | Preguntar antes |
 
 **Repos del monorepo / workspace:**
