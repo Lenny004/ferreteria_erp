@@ -9,6 +9,7 @@ using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Security;
 using Ferreteria.PuntoVenta.Services.Time;
 using Ferreteria.PuntoVenta.Views.Caja;
+using Ferreteria.PuntoVenta.Views.Confeccion;
 using InventarioViews = Ferreteria.PuntoVenta.Views.Inventario;
 using Ferreteria.PuntoVenta.Views.Inicio;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,6 +72,7 @@ public partial class MainShellWindow : Window
             [NavSections.Proveedores] = (BtnProveedores, "Proveedores", () => _serviceProvider.GetRequiredService<InventarioViews.ProveedoresView>()),
             [NavSections.Movimientos] = (BtnMovimientos, "Entradas y Kardex", () => _serviceProvider.GetRequiredService<InventarioViews.MovimientosView>()),
             [NavSections.Alertas] = (BtnAlertas, "Alertas de Stock", () => _serviceProvider.GetRequiredService<InventarioViews.AlertasView>()),
+            [NavSections.Confeccion] = (BtnConfeccion, "Ordenes de Confeccion", () => _serviceProvider.GetRequiredService<OrdenesConfeccionView>()),
             [NavSections.Usuarios] = (BtnUsuarios, "Usuarios y RRHH", () => _serviceProvider.GetRequiredService<InventarioViews.UsuariosView>())
         };
 

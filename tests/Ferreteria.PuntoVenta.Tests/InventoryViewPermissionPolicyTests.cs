@@ -35,4 +35,14 @@ public sealed class InventoryViewPermissionPolicyTests
         Assert.False(InventoryViewPermissionPolicy.CanEditUsers(
             new HashSet<PosPermission> { PosPermission.AdministrarCatalogo }));
     }
+
+    /// <summary>Exige operación de inventario para crear órdenes de confección, igual que el servicio.</summary>
+    [Fact]
+    public void CanCreateConfectionOrders_ExigeOperarInventario()
+    {
+        Assert.True(InventoryViewPermissionPolicy.CanCreateConfectionOrders(
+            new HashSet<PosPermission> { PosPermission.OperarInventario }));
+        Assert.False(InventoryViewPermissionPolicy.CanCreateConfectionOrders(
+            new HashSet<PosPermission> { PosPermission.OperarCaja, PosPermission.AdministrarCatalogo }));
+    }
 }

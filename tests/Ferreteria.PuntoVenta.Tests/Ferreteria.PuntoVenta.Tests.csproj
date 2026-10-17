@@ -29,6 +29,7 @@
     - Se enlazan CashRegisterContracts, SalesDomainConstants y AuditService para que la guarda cubra todas las clases *AuditActions y reutilice la serialización de auditoría.
     - Se enlazan OrderService y sus contratos/excepciones/reglas puras para ejecutar contra el mismo fixture PostgreSQL las ventas y facturaciones de confección con transacciones reales.
     - Se enlazan los servicios CRUD, el guard de autorización y el lockout de PIN para probar permisos en el servicio, sin referenciar el proyecto WPF.
+    - Se enlaza Services/Confection (borrador y filtros de la pantalla de confección), que es lógica pura sin WPF.
   -->
   <ItemGroup>
     <Compile Include="../../Ferreteria.PuntoVenta/Helpers/DecimalInputParser.cs" Link="Helpers/DecimalInputParser.cs" />
@@ -114,6 +115,7 @@
     <Compile Include="../../Ferreteria.PuntoVenta/Services/CustomerService.cs" Link="Services/CustomerService.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/PrinterConfigService.cs" Link="Services/PrinterConfigService.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Services/Returns/*.cs" LinkBase="Returns" />
+    <Compile Include="../../Ferreteria.PuntoVenta/Services/Confection/*.cs" LinkBase="Confection" />
     <Compile Include="../../Ferreteria.PuntoVenta/Data/FerreteriaDbContext.cs" Link="Data/FerreteriaDbContext.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Data/DatabaseConnectionResolver.cs" Link="Data/DatabaseConnectionResolver.cs" />
     <Compile Include="../../Ferreteria.PuntoVenta/Models/**/*.cs" LinkBase="Models" />
