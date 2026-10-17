@@ -9,6 +9,7 @@ using Ferreteria.PuntoVenta.Services.CashRegister;
 using Ferreteria.PuntoVenta.Services.Domain;
 using Ferreteria.PuntoVenta.Services.Dte;
 using Ferreteria.PuntoVenta.Services.Printing;
+using Ferreteria.PuntoVenta.Views.Shell;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using System.Windows;
@@ -19,7 +20,7 @@ namespace Ferreteria.PuntoVenta.Views.Caja;
 /// Punto de venta de mostrador (módulo Caja): búsqueda de Product, carrito temporal
 /// y registro de venta vía Order / CreateCashSale (CashSession opcional en Fase posterior).
 /// </summary>
-public partial class FacturacionView : UserControl
+public partial class FacturacionView : UserControl, IPendingWorkView
 {
     private const int SearchResultLimit = 25;
 
@@ -550,6 +551,15 @@ public partial class FacturacionView : UserControl
         ResetSaleState();
         SetStatusMessage(string.Empty);
     }
+
+    /// <inheritdoc />
+    bool IPendingWorkView.HasPendingWork => HasPendingSale;
+
+    /// <inheritdoc />
+    string IPendingWorkView.PendingWorkDescription => "una venta en curso con productos en el carrito";
+
+    /// <inheritdoc />
+    void IPendingWorkView.DiscardPendingWork() => DiscardPendingSale();
 
     private void ConfirmAndClearSale()
     {

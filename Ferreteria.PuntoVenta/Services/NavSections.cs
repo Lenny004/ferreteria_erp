@@ -44,6 +44,9 @@ public static class NavSections
     /// <summary>Gestión de <see cref="Models.Employee"/> / usuarios del POS.</summary>
     public const string Usuarios = "Usuarios";
 
+    /// <summary>Órdenes de confección (taller de cables): crear y consultar su estado.</summary>
+    public const string Confeccion = "Confeccion";
+
     private static readonly string[] CajaSections =
     [
         Stock,
@@ -60,6 +63,7 @@ public static class NavSections
         Proveedores,
         Movimientos,
         Alertas,
+        Confeccion,
         Usuarios
     ];
 
@@ -98,7 +102,7 @@ public static class NavSections
             Impresoras => permissions.Contains(PosPermission.AdministrarConfiguracion),
             Usuarios => permissions.Contains(PosPermission.AdministrarUsuarios),
             Productos => permissions.Contains(PosPermission.OperarInventario),
-            Proveedores or Movimientos or Alertas => permissions.Contains(PosPermission.OperarInventario),
+            Proveedores or Movimientos or Alertas or Confeccion => permissions.Contains(PosPermission.OperarInventario),
             Stock => permissions.Contains(PosPermission.OperarCaja) || permissions.Contains(PosPermission.OperarInventario),
             Facturacion or HistorialFacturas or Devoluciones or CorteCaja => permissions.Contains(PosPermission.OperarCaja),
             _ => false
@@ -118,11 +122,11 @@ public static class NavSections
     /// </summary>
     /// <param name="sectionKey">Clave de sección.</param>
     /// <returns>
-    /// <see langword="true"/> para Facturación, cuyo carrito en curso no debe perderse al consultar otra sección;
-    /// <see langword="false"/> para las demás, que se recrean para mostrar datos frescos.
+    /// <see langword="true"/> para Facturación y Confección, cuyo carrito o borrador en captura no debe perderse
+    /// al consultar otra sección; <see langword="false"/> para las demás, que se recrean para mostrar datos frescos.
     /// </returns>
     public static bool KeepsViewDuringSession(string sectionKey) =>
-        string.Equals(sectionKey, Facturacion, StringComparison.Ordinal);
+        sectionKey is Facturacion or Confeccion;
 
     /// <summary>Indica si la clave de sección pertenece al módulo.</summary>
     public static bool BelongsToModule(string sectionKey, OperationalModule module) =>

@@ -8,6 +8,7 @@ using Ferreteria.PuntoVenta.Services.SalesHistory;
 using Ferreteria.PuntoVenta.Services.Time;
 using Ferreteria.PuntoVenta.Services.Security;
 using Ferreteria.PuntoVenta.Views.Caja;
+using Ferreteria.PuntoVenta.Views.Confeccion;
 using Ferreteria.PuntoVenta.Views.Inventario;
 using Ferreteria.PuntoVenta.Views.Inicio;
 using Ferreteria.PuntoVenta.Views.PIN;
@@ -126,6 +127,7 @@ public partial class App : Application
                 services.AddTransient<MovimientosView>();
                 services.AddTransient<AlertasView>();
                 services.AddTransient<UsuariosView>();
+                services.AddTransient<OrdenesConfeccionView>();
             })
             .Build();
     }
