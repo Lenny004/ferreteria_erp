@@ -26,4 +26,19 @@ public sealed class PendingSaleNavigationTests
     {
         Assert.True(PendingSaleNavigationGuard.ShouldNavigate(hasPendingSale: true, confirmationAccepted: true));
     }
+
+    /// <summary>Solo Facturación conserva su vista para no perder el carrito al cambiar de sección.</summary>
+    /// <param name="sectionKey">Clave de sección.</param>
+    /// <param name="expected">Resultado esperado.</param>
+    [Theory]
+    [InlineData(NavSections.Facturacion, true)]
+    [InlineData(NavSections.Stock, false)]
+    [InlineData(NavSections.HistorialFacturas, false)]
+    [InlineData(NavSections.CorteCaja, false)]
+    [InlineData(NavSections.Productos, false)]
+    [InlineData("facturacion", false)]
+    public void KeepsViewDuringSession_SoloFacturacion(string sectionKey, bool expected)
+    {
+        Assert.Equal(expected, NavSections.KeepsViewDuringSession(sectionKey));
+    }
 }

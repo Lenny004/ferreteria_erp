@@ -49,12 +49,12 @@ public sealed class InventoryService(
 
         if (!string.IsNullOrWhiteSpace(searchText))
         {
-            var likePattern = $"%{searchText.Trim()}%";
+            var likePattern = ILikePatterns.CreateContainsPattern(searchText);
             productsQuery = productsQuery.Where(product =>
-                EF.Functions.ILike(product.Code, likePattern) ||
-                EF.Functions.ILike(product.Description, likePattern) ||
-                EF.Functions.ILike(product.Family.Name, likePattern) ||
-                (product.Barcode != null && EF.Functions.ILike(product.Barcode, likePattern)));
+                EF.Functions.ILike(product.Code, likePattern, ILikePatterns.EscapeCharacter) ||
+                EF.Functions.ILike(product.Description, likePattern, ILikePatterns.EscapeCharacter) ||
+                EF.Functions.ILike(product.Family.Name, likePattern, ILikePatterns.EscapeCharacter) ||
+                (product.Barcode != null && EF.Functions.ILike(product.Barcode, likePattern, ILikePatterns.EscapeCharacter)));
         }
 
         if (!string.IsNullOrWhiteSpace(stockStatus) && stockStatus != SalesDomainConstants.StockFilters.All)

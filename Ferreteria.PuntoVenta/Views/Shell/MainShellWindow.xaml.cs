@@ -19,7 +19,10 @@ namespace Ferreteria.PuntoVenta.Views.Shell;
 /// Shell principal post-login: navegación lateral entre módulos Caja e Inventario
 /// según el <see cref="OperationalModule"/> de la sesión (Employee autenticado por PIN).
 /// </summary>
-/// <remarks>Ctrl+1..Ctrl+9 navegan las secciones visibles recalculadas por permisos; F5 actualiza conectividad.</remarks>
+/// <remarks>
+/// Ctrl+1..Ctrl+9 navegan las secciones visibles recalculadas por permisos; F5 actualiza conectividad.
+/// La vista de Facturación se conserva mientras dure el shell para no perder la venta en curso.
+/// </remarks>
 public partial class MainShellWindow : Window
 {
     /// <summary>Comando enrutado para navegar por la sección visible indicada.</summary>
@@ -32,6 +35,7 @@ public partial class MainShellWindow : Window
     private readonly IServiceProvider _serviceProvider;
     private readonly CashSessionOpeningFlow _cashSessionOpeningFlow;
     private readonly IAuthorizationGuard _authorizationGuard;
+    private readonly Dictionary<string, UserControl> _sessionViews = new(StringComparer.Ordinal);
     private IReadOnlySet<PosPermission> _grantedPermissions = FrozenSet<PosPermission>.Empty;
     private readonly DispatcherTimer _connectivityTimer;
 
@@ -81,6 +85,7 @@ public partial class MainShellWindow : Window
         _connectivityTimer.Start();
 
         Loaded += OnLoaded;
+        Closing += OnClosing;
         Closed += OnClosed;
     }
 
@@ -304,11 +309,6 @@ public partial class MainShellWindow : Window
             return false;
         }
 
-        if (!CanNavigateFromCurrentSection(sectionKey))
-        {
-            return false;
-        }
-
         foreach (var section in _sections.Values)
         {
             section.Button.Style = (Style)FindResource("AppNavButtonStyle");
@@ -316,29 +316,79 @@ public partial class MainShellWindow : Window
 
         activeSection.Button.Style = (Style)FindResource("AppNavButtonActiveStyle");
         HeaderTitle.Text = activeSection.Title;
-        MainContent.Content = activeSection.CreateView();
+        MainContent.Content = ResolveSectionView(sectionKey, activeSection.CreateView);
         return true;
     }
 
-    /// <summary>Confirma la pérdida del carrito al salir de Facturación.</summary>
-    /// <param name="targetSectionKey">Clave de la sección destino.</param>
-    /// <returns><see langword="true"/> si la navegación puede continuar.</returns>
-    private bool CanNavigateFromCurrentSection(string targetSectionKey)
+    /// <summary>
+    /// Obtiene la vista de la sección, reutilizando la instancia de las secciones que conservan estado.
+    /// </summary>
+    /// <param name="sectionKey">Clave de la sección destino.</param>
+    /// <param name="createView">Fábrica de la vista registrada en DI.</param>
+    /// <returns>La vista existente de la sesión o una instancia nueva.</returns>
+    /// <remarks>
+    /// Facturación se conserva para no perder el carrito al consultar stock o el historial y volver.
+    /// La caché vive con este shell: al cerrar sesión se crea otro shell y la venta no pasa al siguiente cajero.
+    /// </remarks>
+    private UserControl ResolveSectionView(string sectionKey, Func<UserControl> createView)
     {
-        if (string.Equals(targetSectionKey, NavSections.Facturacion, StringComparison.Ordinal))
+        if (!NavSections.KeepsViewDuringSession(sectionKey))
+        {
+            return createView();
+        }
+
+        if (!_sessionViews.TryGetValue(sectionKey, out var view))
+        {
+            view = createView();
+            _sessionViews[sectionKey] = view;
+        }
+
+        return view;
+    }
+
+    /// <summary>Vista de Facturación de la sesión, si ya fue abierta.</summary>
+    private FacturacionView? SessionFacturacionView =>
+        _sessionViews.TryGetValue(NavSections.Facturacion, out var view) ? view as FacturacionView : null;
+
+    /// <summary>
+    /// Pide confirmación antes de abandonar la venta en curso al cerrar sesión o cerrar el POS.
+    /// </summary>
+    /// <param name="actionDescription">Acción que el usuario intenta realizar, en infinitivo.</param>
+    /// <returns><see langword="true"/> si no hay venta pendiente o el usuario confirmó perderla.</returns>
+    private bool ConfirmDiscardPendingSale(string actionDescription)
+    {
+        var hasPendingSale = SessionFacturacionView?.HasPendingSale == true;
+        if (!PendingSaleNavigationGuard.RequiresConfirmation(hasPendingSale))
         {
             return true;
         }
 
-        return MainContent.Content is not FacturacionView facturacionView
-            || facturacionView.ConfirmNavigationAway();
+        var confirmation = MessageBox.Show(
+            this,
+            $"Hay una venta en curso con productos en el carrito. Si continúa con {actionDescription}, la venta se descartará. ¿Desea continuar?",
+            "Venta en curso",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+        return PendingSaleNavigationGuard.ShouldNavigate(hasPendingSale, confirmation == MessageBoxResult.Yes);
     }
 
     /// <summary>
     /// Cierra sesión del Employee, registra auditoría de logout y vuelve a InicioWindow.
     /// </summary>
+    /// <remarks>
+    /// Si hay una venta en curso se pide confirmación; al confirmar, el carrito se vacía antes de salir
+    /// para que el siguiente cajero no herede líneas ni cliente de la venta anterior.
+    /// </remarks>
     private async void OnLogoutClick(object sender, RoutedEventArgs e)
     {
+        if (!ConfirmDiscardPendingSale("el cierre de sesión"))
+        {
+            return;
+        }
+
+        SessionFacturacionView?.DiscardPendingSale();
+
         if (_currentSession.CurrentEmployee is not null)
         {
             await _auditService.RecordLogoutAsync(_currentSession.CurrentEmployee, _currentSession.CurrentModule);
@@ -365,9 +415,25 @@ public partial class MainShellWindow : Window
     }
 
     /// <summary>Cierra la aplicación (ventana shell).</summary>
+    /// <remarks>La confirmación de venta en curso se resuelve en <see cref="OnClosing"/>.</remarks>
     private void OnCerrarClick(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    /// <summary>
+    /// Cancela el cierre de la ventana si hay una venta en curso y el usuario no confirma descartarla.
+    /// </summary>
+    /// <remarks>
+    /// Cubre el botón Cerrar y también Alt+F4. En el cierre de sesión el carrito ya se vació,
+    /// por lo que no se vuelve a preguntar.
+    /// </remarks>
+    private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (!ConfirmDiscardPendingSale("el cierre del punto de venta"))
+        {
+            e.Cancel = true;
+        }
     }
 
     /// <summary>Muestra en el encabezado el rol, nombre del empleado y hora de inicio de sesión.</summary>
