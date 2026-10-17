@@ -1,8 +1,12 @@
 namespace Ferreteria.PuntoVenta.Services;
 
 /// <summary>
-/// Determina si una navegación puede abandonar una venta que todavía tiene líneas.
+/// Determina si una acción del shell puede abandonar una venta que todavía tiene líneas.
 /// </summary>
+/// <remarks>
+/// Cambiar de sección no descarta la venta (el shell conserva Facturación); se consulta al cerrar sesión
+/// y al cerrar el punto de venta.
+/// </remarks>
 public static class PendingSaleNavigationGuard
 {
     /// <summary>

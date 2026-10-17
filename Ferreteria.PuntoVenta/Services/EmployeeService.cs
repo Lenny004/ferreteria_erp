@@ -51,11 +51,11 @@ public sealed class EmployeeService(
 
         if (!string.IsNullOrWhiteSpace(searchText))
         {
-            var like = $"%{searchText.Trim()}%";
+            var like = ILikePatterns.CreateContainsPattern(searchText);
             query = query.Where(e =>
-                EF.Functions.ILike(e.FirstName, like) ||
-                EF.Functions.ILike(e.LastName, like) ||
-                (e.Dui != null && EF.Functions.ILike(e.Dui, like)));
+                EF.Functions.ILike(e.FirstName, like, ILikePatterns.EscapeCharacter) ||
+                EF.Functions.ILike(e.LastName, like, ILikePatterns.EscapeCharacter) ||
+                (e.Dui != null && EF.Functions.ILike(e.Dui, like, ILikePatterns.EscapeCharacter)));
         }
 
         return await query

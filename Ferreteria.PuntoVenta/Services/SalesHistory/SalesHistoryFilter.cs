@@ -1,4 +1,5 @@
 using System.Text;
+using Ferreteria.PuntoVenta.Services.Domain;
 using Ferreteria.PuntoVenta.Services.Time;
 
 namespace Ferreteria.PuntoVenta.Services.SalesHistory;
@@ -119,13 +120,8 @@ public sealed record SalesHistoryFilter(
     /// <summary>Escapa comodines de PostgreSQL para un patrón ILIKE.</summary>
     /// <param name="value">Texto que se incorporará al patrón.</param>
     /// <returns>Texto escapado para usar con el carácter de escape de ILIKE.</returns>
-    public static string EscapeILikePattern(string value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        return value.Replace("\\", "\\\\", StringComparison.Ordinal)
-            .Replace("%", "\\%", StringComparison.Ordinal)
-            .Replace("_", "\\_", StringComparison.Ordinal);
-    }
+    /// <remarks>Delega en <see cref="ILikePatterns.Escape"/> para que todas las búsquedas escapen igual.</remarks>
+    public static string EscapeILikePattern(string value) => ILikePatterns.Escape(value);
 
     private static DateOnly StartOfWeek(DateOnly date)
     {

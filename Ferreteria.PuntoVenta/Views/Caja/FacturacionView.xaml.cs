@@ -48,7 +48,7 @@ public partial class FacturacionView : UserControl
     private Customer? _selectedCustomer;
     private bool _suppressCustomerSearch;
 
-    /// <summary>Indica si existe una venta en curso que se perdería al navegar.</summary>
+    /// <summary>Indica si existe una venta en curso que se perdería al cerrar sesión o cerrar el POS.</summary>
     public bool HasPendingSale => _cartLineItems.Count > 0;
 
     /// <summary>Inicializa la vista de facturación y enlaza el carrito a la UI.</summary>
@@ -83,14 +83,16 @@ public partial class FacturacionView : UserControl
         RenderSaleTotals();
     }
 
-    /// <summary>Al cargar, ejecuta la primera búsqueda de productos.</summary>
+    /// <summary>Al cargar o al volver a la sección, refresca la búsqueda de productos.</summary>
+    /// <remarks>El shell reutiliza esta vista durante la sesión, por lo que el carrito se conserva entre cargas.</remarks>
     private async void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
     {
         ProductSearchTextBox.Focus();
         await SearchProductsAsync();
     }
 
-    /// <summary>Libera el coordinador de búsquedas asíncronas al salir de la vista.</summary>
+    /// <summary>Cancela las búsquedas asíncronas en curso al salir de la vista.</summary>
+    /// <remarks>Los coordinadores admiten nuevas búsquedas después de liberarse, así que la vista puede volver a mostrarse.</remarks>
     private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
     {
         _searchCoordinator.Dispose();
@@ -537,25 +539,16 @@ public partial class FacturacionView : UserControl
     }
 
     /// <summary>
-    /// Solicita confirmación antes de abandonar Facturación con líneas en el carrito.
+    /// Descarta la venta en curso (líneas, cliente y tipo de documento) sin pedir confirmación.
     /// </summary>
-    /// <returns><see langword="true"/> si la navegación puede continuar.</returns>
-    public bool ConfirmNavigationAway()
+    /// <remarks>
+    /// El llamador es responsable de confirmar con el usuario antes de invocarlo; el shell lo usa
+    /// al cerrar sesión para que el siguiente cajero empiece con el carrito vacío.
+    /// </remarks>
+    public void DiscardPendingSale()
     {
-        if (!PendingSaleNavigationGuard.RequiresConfirmation(HasPendingSale))
-        {
-            return true;
-        }
-
-        var confirmation = MessageBox.Show(
-            Window.GetWindow(this),
-            "Se perderán las líneas de la venta en curso. ¿Desea continuar?",
-            "Confirmar navegación",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-        return PendingSaleNavigationGuard.ShouldNavigate(
-            HasPendingSale,
-            confirmation == MessageBoxResult.Yes);
+        ResetSaleState();
+        SetStatusMessage(string.Empty);
     }
 
     private void ConfirmAndClearSale()

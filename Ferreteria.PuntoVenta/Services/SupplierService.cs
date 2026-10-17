@@ -1,5 +1,6 @@
 ﻿using Ferreteria.PuntoVenta.Data;
 using Ferreteria.PuntoVenta.Models;
+using Ferreteria.PuntoVenta.Services.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Ferreteria.PuntoVenta.Services.Security;
@@ -38,12 +39,12 @@ public sealed class SupplierService(
 
         if (!string.IsNullOrWhiteSpace(searchText))
         {
-            var like = $"%{searchText.Trim()}%";
+            var like = ILikePatterns.CreateContainsPattern(searchText);
             query = query.Where(s =>
-                EF.Functions.ILike(s.Name, like) ||
-                (s.TradeName != null && EF.Functions.ILike(s.TradeName, like)) ||
-                (s.ContactName != null && EF.Functions.ILike(s.ContactName, like)) ||
-                (s.Nit != null && EF.Functions.ILike(s.Nit, like)));
+                EF.Functions.ILike(s.Name, like, ILikePatterns.EscapeCharacter) ||
+                (s.TradeName != null && EF.Functions.ILike(s.TradeName, like, ILikePatterns.EscapeCharacter)) ||
+                (s.ContactName != null && EF.Functions.ILike(s.ContactName, like, ILikePatterns.EscapeCharacter)) ||
+                (s.Nit != null && EF.Functions.ILike(s.Nit, like, ILikePatterns.EscapeCharacter)));
         }
 
         return await query.OrderBy(s => s.Name).Take(500).ToListAsync(cancellationToken);

@@ -1,5 +1,6 @@
 ﻿using Ferreteria.PuntoVenta.Data;
 using Ferreteria.PuntoVenta.Models;
+using Ferreteria.PuntoVenta.Services.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Ferreteria.PuntoVenta.Services.Security;
@@ -47,12 +48,12 @@ public sealed class ProductCatalogService(
 
         if (!string.IsNullOrWhiteSpace(searchText))
         {
-            var like = $"%{searchText.Trim()}%";
+            var like = ILikePatterns.CreateContainsPattern(searchText);
             query = query.Where(p =>
-                EF.Functions.ILike(p.Code, like) ||
-                EF.Functions.ILike(p.Description, like) ||
-                EF.Functions.ILike(p.Family.Name, like) ||
-                (p.Barcode != null && EF.Functions.ILike(p.Barcode, like)));
+                EF.Functions.ILike(p.Code, like, ILikePatterns.EscapeCharacter) ||
+                EF.Functions.ILike(p.Description, like, ILikePatterns.EscapeCharacter) ||
+                EF.Functions.ILike(p.Family.Name, like, ILikePatterns.EscapeCharacter) ||
+                (p.Barcode != null && EF.Functions.ILike(p.Barcode, like, ILikePatterns.EscapeCharacter)));
         }
 
         return await query

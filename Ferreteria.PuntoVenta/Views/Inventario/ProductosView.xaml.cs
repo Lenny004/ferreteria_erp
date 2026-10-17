@@ -162,7 +162,8 @@ public partial class ProductosView : UserControl
         StockLabel.Content = "Stock actual (usar Entradas/Kardex)";
         MinStockBox.Text = product.MinStock.ToString(CultureInfo.InvariantCulture);
         NotesBox.Text = product.Notes;
-        DeactivateButton.Visibility = Visibility.Visible;
+        // Sin permiso de edición el botón no se muestra; el servicio vuelve a validar el permiso al desactivar.
+        DeactivateButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
         HideError();
     }
 
