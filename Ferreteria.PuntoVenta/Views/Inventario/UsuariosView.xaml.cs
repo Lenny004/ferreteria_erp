@@ -118,10 +118,10 @@ public partial class UsuariosView : UserControl
     /// <summary>Ejecuta la desactivación conservando la confirmación existente.</summary>
     private void OnDeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) => OnDesactivarClick(sender, e);
 
-    /// <summary>Habilita Supr solo cuando hay un usuario seleccionado.</summary>
+    /// <summary>Habilita Supr solo con permiso de edición y un usuario seleccionado.</summary>
     private void OnDeleteCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
-        e.CanExecute = _selectedId.HasValue;
+        e.CanExecute = _canEdit && _selectedId.HasValue;
         e.Handled = true;
     }
 
@@ -281,7 +281,8 @@ public partial class UsuariosView : UserControl
     /// <summary>Desactiva el Employee seleccionado tras confirmación.</summary>
     private async void OnDesactivarClick(object sender, RoutedEventArgs e)
     {
-        if (_selectedId is not { } id)
+        // Defensa adicional: el botón y el atajo ya se ocultan o deshabilitan sin permiso.
+        if (!_canEdit || _selectedId is not { } id)
         {
             return;
         }
