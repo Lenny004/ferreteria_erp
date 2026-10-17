@@ -1,5 +1,6 @@
 ﻿using Ferreteria.PuntoVenta.Data;
 using Ferreteria.PuntoVenta.Models;
+using Ferreteria.PuntoVenta.Services.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Ferreteria.PuntoVenta.Services.Security;
@@ -39,12 +40,12 @@ public sealed class CustomerService(
 
         if (!string.IsNullOrWhiteSpace(searchText))
         {
-            var like = $"%{searchText.Trim()}%";
+            var like = ILikePatterns.CreateContainsPattern(searchText);
             query = query.Where(c =>
-                EF.Functions.ILike(c.Name, like) ||
-                (c.Nit != null && EF.Functions.ILike(c.Nit, like)) ||
-                (c.Dui != null && EF.Functions.ILike(c.Dui, like)) ||
-                (c.Nrc != null && EF.Functions.ILike(c.Nrc, like)));
+                EF.Functions.ILike(c.Name, like, ILikePatterns.EscapeCharacter) ||
+                (c.Nit != null && EF.Functions.ILike(c.Nit, like, ILikePatterns.EscapeCharacter)) ||
+                (c.Dui != null && EF.Functions.ILike(c.Dui, like, ILikePatterns.EscapeCharacter)) ||
+                (c.Nrc != null && EF.Functions.ILike(c.Nrc, like, ILikePatterns.EscapeCharacter)));
         }
 
         take = Math.Clamp(take, 1, 100);
