@@ -113,6 +113,17 @@ public static class NavSections
             _ => Stock
         };
 
+    /// <summary>
+    /// Indica si la vista de la sección se conserva durante toda la sesión del shell.
+    /// </summary>
+    /// <param name="sectionKey">Clave de sección.</param>
+    /// <returns>
+    /// <see langword="true"/> para Facturación, cuyo carrito en curso no debe perderse al consultar otra sección;
+    /// <see langword="false"/> para las demás, que se recrean para mostrar datos frescos.
+    /// </returns>
+    public static bool KeepsViewDuringSession(string sectionKey) =>
+        string.Equals(sectionKey, Facturacion, StringComparison.Ordinal);
+
     /// <summary>Indica si la clave de sección pertenece al módulo.</summary>
     public static bool BelongsToModule(string sectionKey, OperationalModule module) =>
         ForModule(module).Contains(sectionKey, StringComparer.Ordinal);
