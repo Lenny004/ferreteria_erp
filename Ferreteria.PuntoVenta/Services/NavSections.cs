@@ -122,11 +122,11 @@ public static class NavSections
     /// </summary>
     /// <param name="sectionKey">Clave de sección.</param>
     /// <returns>
-    /// <see langword="true"/> para Facturación, cuyo carrito en curso no debe perderse al consultar otra sección;
-    /// <see langword="false"/> para las demás, que se recrean para mostrar datos frescos.
+    /// <see langword="true"/> para Facturación y Confección, cuyo carrito o borrador en captura no debe perderse
+    /// al consultar otra sección; <see langword="false"/> para las demás, que se recrean para mostrar datos frescos.
     /// </returns>
     public static bool KeepsViewDuringSession(string sectionKey) =>
-        string.Equals(sectionKey, Facturacion, StringComparison.Ordinal);
+        sectionKey is Facturacion or Confeccion;
 
     /// <summary>Indica si la clave de sección pertenece al módulo.</summary>
     public static bool BelongsToModule(string sectionKey, OperationalModule module) =>

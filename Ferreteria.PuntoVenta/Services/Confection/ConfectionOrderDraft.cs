@@ -64,6 +64,17 @@ public sealed class ConfectionOrderDraft
     /// <summary>Subtotal estimado sin IVA; el total definitivo lo calcula el servicio.</summary>
     public decimal EstimatedSubtotal => _lines.Sum(line => line.Subtotal);
 
+    /// <summary>Indica si hay datos capturados que se perderían al descartar el borrador.</summary>
+    /// <param name="customerName">Nombre del cliente escrito en pantalla.</param>
+    /// <param name="customerPhone">Teléfono escrito en pantalla.</param>
+    /// <param name="notes">Indicaciones escritas en pantalla.</param>
+    /// <returns><see langword="true"/> si hay líneas o algún texto distinto de espacios.</returns>
+    public bool HasCapturedData(string? customerName, string? customerPhone, string? notes) =>
+        HasLines
+        || !string.IsNullOrWhiteSpace(customerName)
+        || !string.IsNullOrWhiteSpace(customerPhone)
+        || !string.IsNullOrWhiteSpace(notes);
+
     /// <summary>Agrega un producto o acumula la cantidad si ya estaba en el borrador.</summary>
     /// <param name="product">Producto activo elegido en la búsqueda.</param>
     /// <param name="quantity">Cantidad a agregar.</param>

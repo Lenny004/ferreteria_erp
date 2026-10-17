@@ -51,6 +51,24 @@ public sealed class ConfectionOrderDraftTests
         Assert.Equal(5m, line.Quantity);
     }
 
+    /// <summary>Hay datos que confirmar si existen líneas o cualquier texto capturado.</summary>
+    [Fact]
+    public void HasCapturedData_DetectaLineasOTextos()
+    {
+        var draft = new ConfectionOrderDraft();
+
+        Assert.False(draft.HasCapturedData(null, "  ", string.Empty));
+        Assert.True(draft.HasCapturedData("Ana", null, null));
+        Assert.True(draft.HasCapturedData(null, "7000-0000", null));
+        Assert.True(draft.HasCapturedData(null, null, "cable 3 m"));
+
+        draft.AddLine(Product("CAB-08", 1m), 1m);
+        Assert.True(draft.HasCapturedData(null, null, null));
+
+        draft.Clear();
+        Assert.False(draft.HasCapturedData(null, null, null));
+    }
+
     /// <summary>Quita solo la línea del producto indicado.</summary>
     [Fact]
     public void RemoveLine_QuitaElProducto()

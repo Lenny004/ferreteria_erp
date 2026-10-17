@@ -198,14 +198,14 @@ El módulo de Caja requiere PIN para ingresar. Esto identifica al cajero que ope
 
 **Flujo de acceso a Confección:**
 
-El módulo de Confección es de acceso directo sin PIN, pues los técnicos de taller no facturan. Pueden crear órdenes de ensamble, consultar el historial y buscar códigos del catálogo.
+En esta versión, Confección es una sección del módulo **Inventario**. Se entra con el botón INVENTARIO de inicio y **PIN** de un empleado con `can_sell`. La sección solo es visible con el permiso `OperarInventario`, que es el mismo que exige `OrderService.CreateConfectionOrderAsync`. Los técnicos no facturan: crean órdenes de ensamble y consultan su estado.
 
 ```
-[Botón CONFECCIONES] → Panel de Confección (sin PIN)
+[Botón INVENTARIO] → Modal PIN (empleados con can_sell)
         │
-        ├── Historial Ventas → Órdenes registradas
-        ├── Órdenes Confección → Nueva orden de ensamble
-        └── Ver Códigos → Catálogo de productos y códigos
+  PIN correcto → Panel de Inventario
+        │
+        └── Confección (permiso OperarInventario) → Nueva orden de ensamble + bandeja por estado
 ```
 
 > **Nota de implementación:** `PinWindow` valida el PIN según el módulo elegido: `can_cashier` para VENTAS, `can_sell` para CONFECCION. Tras el ingreso, `MainShellWindow` oculta las secciones del otro módulo vía `NavSections` y `ICurrentSessionService.ActiveModule`.
@@ -279,7 +279,7 @@ Panel de Caja (requiere PIN para entrar)
 
 ### Módulo Confección
 
-Acceso directo sin PIN. Orientado a los técnicos de taller que fabrican cables custom. No manejan facturación ni efectivo.
+Sección del módulo Inventario: requiere PIN al entrar y el permiso `OperarInventario`. Orientada a los técnicos de taller que fabrican cables custom. No manejan facturación ni efectivo.
 
 ### Flujo de confección (taller)
 
@@ -292,10 +292,10 @@ Cliente llega → crear Order PENDIENTE (datos cliente opcionales)
     → Order pasa a COMPLETADA + DTE + descuento inventario
 ```
 
-Si el cliente no proporciona datos, `customerId` apunta al registro sistema **"Consumidor Final"** (`system.Settings.DefaultCustomerId`).
+Si el cliente no proporciona datos, la orden se guarda con `customerId` nulo (consumidor final), igual que las ventas de caja. El registro sistema **"Consumidor Final"** (`system.Settings.DefaultCustomerId`) sigue pendiente.
 
 ```
-Panel de Confección (sin PIN)
+Panel de Inventario → Confección (PIN + OperarInventario; diseño objetivo, ver estado actual abajo)
         │
         ├── HISTORIAL VENTAS
         │   ├── Tabla de órdenes registradas

@@ -6,6 +6,7 @@ using Ferreteria.PuntoVenta.Services;
 using Ferreteria.PuntoVenta.Services.Confection;
 using Ferreteria.PuntoVenta.Services.Domain;
 using Ferreteria.PuntoVenta.Services.Security;
+using Ferreteria.PuntoVenta.Views.Shell;
 using Microsoft.Extensions.Logging;
 
 namespace Ferreteria.PuntoVenta.Views.Confeccion;
@@ -17,11 +18,15 @@ namespace Ferreteria.PuntoVenta.Views.Confeccion;
 /// La orden se registra con <see cref="IOrderService.CreateConfectionOrderAsync"/> en estado PENDIENTE,
 /// sin descontar inventario; caja la factura después. Las reglas del borrador viven en
 /// <see cref="ConfectionOrderDraft"/>. Atajos: Ctrl+S crear, F2/Ctrl+F buscar producto, Esc limpiar, F5 actualizar.
+/// El shell conserva esta vista durante la sesión, así que el borrador sobrevive al cambiar de sección.
 /// </remarks>
-public partial class OrdenesConfeccionView : UserControl
+public partial class OrdenesConfeccionView : UserControl, IPendingWorkView
 {
     private const int ProductSearchLimit = 25;
     private const int OrderListLimit = 100;
+    private const string StatusSuccessBrushKey = "AppSuccess";
+    private const string StatusErrorBrushKey = "AppError";
+    private const string StatusWarningBrushKey = "AppWarning";
 
     private readonly IOrderService _orderService;
     private readonly IInventoryService _inventoryService;
@@ -56,9 +61,23 @@ public partial class OrdenesConfeccionView : UserControl
         Unloaded += OnUnloaded;
     }
 
+    /// <inheritdoc />
+    public bool HasPendingWork => _draft.HasCapturedData(CustomerNameBox.Text, CustomerPhoneBox.Text, NotesBox.Text);
+
+    /// <inheritdoc />
+    public string PendingWorkDescription => "una orden de confección en captura";
+
+    /// <inheritdoc />
+    public void DiscardPendingWork()
+    {
+        ClearDraftFields();
+        SetStatusMessage(string.Empty);
+    }
+
     /// <summary>
     /// Resuelve permisos y carga la bandeja y la búsqueda de productos.
     /// </summary>
+    /// <remarks>Se ejecuta en cada carga: al volver a la sección se refrescan permisos y bandeja sin tocar el borrador.</remarks>
     /// <remarks>Sin permiso de inventario el formulario queda deshabilitado (fail secure); el servicio vuelve a validarlo.</remarks>
     private async Task InitializeAsync()
     {
@@ -92,11 +111,13 @@ public partial class OrdenesConfeccionView : UserControl
     }
 
     /// <summary>Recarga la bandeja según el estado y el texto de búsqueda.</summary>
-    private async Task ReloadOrdersAsync()
+    /// <param name="reportErrors">Si es <see langword="false"/>, el llamador decide qué mensaje mostrar al fallar.</param>
+    /// <returns><see langword="true"/> si la bandeja se actualizó o la búsqueda fue reemplazada por otra más reciente.</returns>
+    private async Task<bool> ReloadOrdersAsync(bool reportErrors = true)
     {
         if (!_isInitialized)
         {
-            return;
+            return true;
         }
 
         var cancellationToken = _orderSearch.BeginNewSearch();
@@ -110,15 +131,21 @@ public partial class OrdenesConfeccionView : UserControl
                 cancellationToken);
             OrdersList.ItemsSource = orders;
             EmptyOrdersText.Visibility = orders.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            return true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return;
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "No se pudo cargar la bandeja de órdenes de confección");
-            SetStatusMessage("No se pudieron cargar las órdenes. Presione F5 para reintentar.", isError: true);
+            if (reportErrors)
+            {
+                SetStatusMessage("No se pudieron cargar las órdenes. Presione F5 para reintentar.", isError: true);
+            }
+
+            return false;
         }
     }
 
@@ -263,8 +290,14 @@ public partial class OrdenesConfeccionView : UserControl
         {
             var result = await _orderService.CreateConfectionOrderAsync(request);
             ResetForm();
-            SetStatusMessage($"Orden creada y pendiente de facturar. Total: {NumberFormatter.Currency(result.Total)}.");
-            await ReloadOrdersAsync();
+            var createdMessage = $"Orden creada y pendiente de facturar. Total: {NumberFormatter.Currency(result.Total)}.";
+            SetStatusMessage(createdMessage);
+
+            // La orden ya quedó guardada: si falla la recarga se conserva el éxito y se avisa aparte.
+            if (!await ReloadOrdersAsync(reportErrors: false))
+            {
+                SetStatusMessage($"{createdMessage} No se pudo actualizar la bandeja; presione F5.", StatusWarningBrushKey);
+            }
         }
         catch (Exception ex) when (ex is InvalidOrderException or ProductNotFoundException
             or InvalidInventoryQuantityException or UnauthorizedOperationException)
@@ -302,13 +335,18 @@ public partial class OrdenesConfeccionView : UserControl
 
     private void ResetForm()
     {
+        ClearDraftFields();
+        CustomerNameBox.Focus();
+    }
+
+    private void ClearDraftFields()
+    {
         _draft.Clear();
         CustomerNameBox.Clear();
         CustomerPhoneBox.Clear();
         NotesBox.Clear();
         QuantityTextBox.Text = "1";
         RenderDraft();
-        CustomerNameBox.Focus();
     }
 
     private void RenderDraft()
@@ -325,9 +363,12 @@ public partial class OrdenesConfeccionView : UserControl
         CommandManager.InvalidateRequerySuggested();
     }
 
-    private void SetStatusMessage(string message, bool isError = false)
+    private void SetStatusMessage(string message, bool isError = false) =>
+        SetStatusMessage(message, isError ? StatusErrorBrushKey : StatusSuccessBrushKey);
+
+    private void SetStatusMessage(string message, string brushKey)
     {
         StatusText.Text = message;
-        StatusText.Foreground = (System.Windows.Media.Brush)FindResource(isError ? "AppError" : "AppSuccess");
+        StatusText.Foreground = (System.Windows.Media.Brush)FindResource(brushKey);
     }
 }
