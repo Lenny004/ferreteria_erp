@@ -198,14 +198,14 @@ El módulo de Caja requiere PIN para ingresar. Esto identifica al cajero que ope
 
 **Flujo de acceso a Confección:**
 
-El módulo de Confección es de acceso directo sin PIN, pues los técnicos de taller no facturan. Pueden crear órdenes de ensamble, consultar el historial y buscar códigos del catálogo.
+En esta versión, Confección es una sección del módulo **Inventario**. Se entra con el botón INVENTARIO de inicio y **PIN** de un empleado con `can_sell`. La sección solo es visible con el permiso `OperarInventario`, que es el mismo que exige `OrderService.CreateConfectionOrderAsync`. Los técnicos no facturan: crean órdenes de ensamble y consultan su estado.
 
 ```
-[Botón CONFECCIONES] → Panel de Confección (sin PIN)
+[Botón INVENTARIO] → Modal PIN (empleados con can_sell)
         │
-        ├── Historial Ventas → Órdenes registradas
-        ├── Órdenes Confección → Nueva orden de ensamble
-        └── Ver Códigos → Catálogo de productos y códigos
+  PIN correcto → Panel de Inventario
+        │
+        └── Confección (permiso OperarInventario) → Nueva orden de ensamble + bandeja por estado
 ```
 
 > **Nota de implementación:** `PinWindow` valida el PIN según el módulo elegido: `can_cashier` para VENTAS, `can_sell` para CONFECCION. Tras el ingreso, `MainShellWindow` oculta las secciones del otro módulo vía `NavSections` y `ICurrentSessionService.ActiveModule`.
@@ -279,7 +279,7 @@ Panel de Caja (requiere PIN para entrar)
 
 ### Módulo Confección
 
-Acceso directo sin PIN. Orientado a los técnicos de taller que fabrican cables custom. No manejan facturación ni efectivo.
+Sección del módulo Inventario: requiere PIN al entrar y el permiso `OperarInventario`. Orientada a los técnicos de taller que fabrican cables custom. No manejan facturación ni efectivo.
 
 ### Flujo de confección (taller)
 
@@ -292,10 +292,10 @@ Cliente llega → crear Order PENDIENTE (datos cliente opcionales)
     → Order pasa a COMPLETADA + DTE + descuento inventario
 ```
 
-Si el cliente no proporciona datos, `customerId` apunta al registro sistema **"Consumidor Final"** (`system.Settings.DefaultCustomerId`).
+Si el cliente no proporciona datos, la orden se guarda con `customerId` nulo (consumidor final), igual que las ventas de caja. El registro sistema **"Consumidor Final"** (`system.Settings.DefaultCustomerId`) sigue pendiente.
 
 ```
-Panel de Confección (sin PIN)
+Panel de Inventario → Confección (PIN + OperarInventario; diseño objetivo, ver estado actual abajo)
         │
         ├── HISTORIAL VENTAS
         │   ├── Tabla de órdenes registradas
@@ -322,8 +322,15 @@ Panel de Confección (sin PIN)
 | Vista | Archivo | Propósito | Estado |
 |---|---|---|---|
 | Historial de Ventas | `Views/Confeccion/HistorialVentasView.xaml` | Órdenes y ventas completadas | UI + `OrderService` parcial |
-| Órdenes Confección | `Views/Confeccion/OrdenesConfeccionView.xaml` | Crear y listar órdenes pendientes | UI + `OrderService` parcial |
+| Órdenes Confección | `Views/Confeccion/OrdenesConfeccionView.xaml` | Crear órdenes PENDIENTE y bandeja con su estado | ✅ Conectado a `OrderService` |
 | Ver Códigos | `Views/Confeccion/VerCodigosView.xaml` | Búsqueda de catálogo | Conectado a `InventoryService` |
+
+> **Estado actual de `OrdenesConfeccionView`:** en esta versión la pantalla es la sección **Confección** del módulo **Inventario** (Ctrl+número según su posición en el menú). Es visible solo con el permiso `OperarInventario` (`can_sell`), el mismo que exige `OrderService.CreateConfectionOrderAsync`.
+>
+> - **Nueva orden:** cliente y teléfono opcionales, indicaciones del trabajo y productos con cantidad (búsqueda por código o descripción). Al crearla queda `PENDIENTE` sin descontar stock y el sistema muestra un subtotal estimado sin IVA. Si un reintento falla por un error técnico, se reutiliza el mismo `ClientRequestId` y la orden no se duplica.
+> - **Bandeja:** lista las órdenes de confección filtradas por estado (Pendientes por defecto, Completadas, Canceladas o Todas) y por texto (cliente, notas o técnico). Muestra número, fecha, cliente, quién la registró, ítems, total y estado.
+> - **Cliente:** si no se captura, la orden se guarda con `customerId` nulo (consumidor final), igual que las ventas de caja. El nombre y el teléfono se guardan en las notas de la orden.
+> - **Pendiente:** `HistorialVentasView` y `VerCodigosView` todavía no existen. La facturación de órdenes pendientes desde caja (`CompleteConfectionOrderAsync`) aún no tiene pantalla.
 
 ---
 
@@ -742,7 +749,7 @@ Resumen alineado al plan v3.0 (`docs/FERRETERIA_PLAN_FINALIZACION_APP.md`):
 | Caja | `DevolucionesView` | Búsqueda, cálculo y confirmación con PIN de autorización; impresión física pendiente de probar |
 | Caja | `ImpresorasView` | UI shell |
 | Confección | `HistorialVentasView` | UI + servicios parciales |
-| Confección | `OrdenesConfeccionView` | UI + servicios parciales |
+| Confección | `OrdenesConfeccionView` | ✅ Crear órdenes y bandeja por estado (módulo Inventario, `OperarInventario`) |
 | Confección | `VerCodigosView` | ✅ conectado a inventario |
 
 `dotnet build` compila con 0 errores. Los flujos de negocio completos (DTE, corte, devoluciones) aún no están operativos en producción.

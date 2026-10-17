@@ -331,6 +331,29 @@
                             </Grid>
                         </Button>
                         <Button
+                            x:Name="BtnConfeccion"
+                            Style="{StaticResource AppNavButtonStyle}"
+                            Click="OnNavClick"
+                            Tag="Confeccion">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition
+                                        Width="26" />
+                                    <ColumnDefinition
+                                        Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Image
+                                    Source="pack://application:,,,/Ferreteria.PuntoVenta;component/Resources/Images/confecciones.png"
+                                    Width="20"
+                                    Height="20" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="Confección"
+                                    VerticalAlignment="Center"
+                                    Margin="8,0,0,0" />
+                            </Grid>
+                        </Button>
+                        <Button
                             x:Name="BtnUsuarios"
                             Style="{StaticResource AppNavButtonStyle}"
                             Click="OnNavClick"

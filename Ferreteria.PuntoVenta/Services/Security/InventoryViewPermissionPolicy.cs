@@ -21,6 +21,12 @@ public static class InventoryViewPermissionPolicy
     public static bool CanEditUsers(IReadOnlySet<PosPermission> permissions) =>
         HasPermission(permissions, PosPermission.AdministrarUsuarios);
 
+    /// <summary>Indica si el usuario puede crear órdenes de confección.</summary>
+    /// <param name="permissions">Permisos efectivos del usuario.</param>
+    /// <returns><see langword="true"/> si puede operar el inventario, el mismo permiso que exige el servicio.</returns>
+    public static bool CanCreateConfectionOrders(IReadOnlySet<PosPermission> permissions) =>
+        HasPermission(permissions, PosPermission.OperarInventario);
+
     private static bool HasPermission(
         IReadOnlySet<PosPermission> permissions,
         PosPermission requiredPermission)
