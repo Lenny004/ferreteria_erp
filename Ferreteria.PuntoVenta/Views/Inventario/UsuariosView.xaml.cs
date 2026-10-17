@@ -179,7 +179,8 @@ public partial class UsuariosView : UserControl
         CanSellCheck.IsChecked = employee.CanSell;
         PinBox.Password = string.Empty;
         PinLabel.Content = "Nuevo PIN (dejar vacío para no cambiar)";
-        DeactivateButton.Visibility = Visibility.Visible;
+        // Sin permiso de edición el botón no se muestra; el servicio vuelve a validar el permiso al desactivar.
+        DeactivateButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
         HideError();
     }
 

@@ -131,7 +131,8 @@ public partial class ProveedoresView : UserControl
         AddressBox.Text = supplier.Address;
         CreditDaysBox.Text = supplier.CreditDays.ToString();
         NotesBox.Text = supplier.Notes;
-        DeactivateButton.Visibility = Visibility.Visible;
+        // Sin permiso de edición el botón no se muestra; el servicio vuelve a validar el permiso al desactivar.
+        DeactivateButton.Visibility = _canEdit ? Visibility.Visible : Visibility.Collapsed;
         HideError();
     }
 
