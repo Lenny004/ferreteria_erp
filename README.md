@@ -322,8 +322,15 @@ Panel de Confección (sin PIN)
 | Vista | Archivo | Propósito | Estado |
 |---|---|---|---|
 | Historial de Ventas | `Views/Confeccion/HistorialVentasView.xaml` | Órdenes y ventas completadas | UI + `OrderService` parcial |
-| Órdenes Confección | `Views/Confeccion/OrdenesConfeccionView.xaml` | Crear y listar órdenes pendientes | UI + `OrderService` parcial |
+| Órdenes Confección | `Views/Confeccion/OrdenesConfeccionView.xaml` | Crear órdenes PENDIENTE y bandeja con su estado | ✅ Conectado a `OrderService` |
 | Ver Códigos | `Views/Confeccion/VerCodigosView.xaml` | Búsqueda de catálogo | Conectado a `InventoryService` |
+
+> **Estado actual de `OrdenesConfeccionView`:** en esta versión la pantalla es la sección **Confección** del módulo **Inventario** (Ctrl+número según su posición en el menú). Es visible solo con el permiso `OperarInventario` (`can_sell`), el mismo que exige `OrderService.CreateConfectionOrderAsync`.
+>
+> - **Nueva orden:** cliente y teléfono opcionales, indicaciones del trabajo y productos con cantidad (búsqueda por código o descripción). Al crearla queda `PENDIENTE` sin descontar stock y el sistema muestra un subtotal estimado sin IVA. Si un reintento falla por un error técnico, se reutiliza el mismo `ClientRequestId` y la orden no se duplica.
+> - **Bandeja:** lista las órdenes de confección filtradas por estado (Pendientes por defecto, Completadas, Canceladas o Todas) y por texto (cliente, notas o técnico). Muestra número, fecha, cliente, quién la registró, ítems, total y estado.
+> - **Cliente:** si no se captura, la orden se guarda con `customerId` nulo (consumidor final), igual que las ventas de caja. El nombre y el teléfono se guardan en las notas de la orden.
+> - **Pendiente:** `HistorialVentasView` y `VerCodigosView` todavía no existen. La facturación de órdenes pendientes desde caja (`CompleteConfectionOrderAsync`) aún no tiene pantalla.
 
 ---
 
@@ -742,7 +749,7 @@ Resumen alineado al plan v3.0 (`docs/FERRETERIA_PLAN_FINALIZACION_APP.md`):
 | Caja | `DevolucionesView` | Búsqueda, cálculo y confirmación con PIN de autorización; impresión física pendiente de probar |
 | Caja | `ImpresorasView` | UI shell |
 | Confección | `HistorialVentasView` | UI + servicios parciales |
-| Confección | `OrdenesConfeccionView` | UI + servicios parciales |
+| Confección | `OrdenesConfeccionView` | ✅ Crear órdenes y bandeja por estado (módulo Inventario, `OperarInventario`) |
 | Confección | `VerCodigosView` | ✅ conectado a inventario |
 
 `dotnet build` compila con 0 errores. Los flujos de negocio completos (DTE, corte, devoluciones) aún no están operativos en producción.
