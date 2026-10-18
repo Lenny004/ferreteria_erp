@@ -55,6 +55,8 @@ description = "Marcadores de posición y credenciales desechables de pruebas"
 regexTarget = "secret"
 regexes = [
   '''^(?:\.{3}|\*{3}|<[^>]*>)$''',
+  # Marcador que git-filter-repo deja al purgar secretos del historial.
+  '''^\*{3}REMOVED\*{3}$''',
   # Solo ${VAR} o ${VAR:?mensaje}; un valor por defecto (${VAR:-valor}) sí se revisa.
   '''^\$\{[A-Za-z_][A-Za-z0-9_]*(?:\}|:?\?)''',
   '''^CAMBIAR_[A-Z_]+$''',
